@@ -24,6 +24,10 @@
     },
     {
       "handle": "filesystem"
+    },
+    {
+      "src": "/img/(.*)",
+      "dest": "/api/image.php?file=$1"
     }
   ]
 }

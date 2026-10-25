@@ -1,4 +1,6 @@
 <?php
+error_reporting(0);
+ini_set('display_errors', '0');
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../config.php';
 
@@ -33,6 +35,53 @@ $_SESSION['last_activity'] = time();
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $pdo = getDB();
 
+// Función de subida segura y multiplataforma (compatible con Serverless / Vercel y disco local)
+function saveUploadedFile($file, $prefix = 'img') {
+    if (empty($file['name']) || $file['error'] !== UPLOAD_ERR_OK) {
+        return null;
+    }
+    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'webm', 'pdf'];
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, $allowed)) {
+        return null;
+    }
+
+    $newFileName = $prefix . '_' . time() . '_' . rand(100, 999) . '.' . $ext;
+    $fileData = file_get_contents($file['tmp_name']);
+    if ($fileData === false) {
+        return null;
+    }
+
+    $mime = !empty($file['type']) ? $file['type'] : 'image/' . ($ext === 'jpg' ? 'jpeg' : $ext);
+
+    // 1. Guardar en TiDB Cloud / MySQL (archivos_subidos)
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("INSERT INTO archivos_subidos (nombre, mime, datos) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE mime = ?, datos = ?");
+        $stmt->execute([$newFileName, $mime, $fileData, $mime, $fileData]);
+    } catch (Exception $e) {
+        try {
+            $db->exec("CREATE TABLE IF NOT EXISTS `archivos_subidos` (
+              `nombre` VARCHAR(255) NOT NULL,
+              `mime` VARCHAR(100) NOT NULL,
+              `datos` MEDIUMBLOB NOT NULL,
+              `fecha` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (`nombre`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            $stmt = $db->prepare("INSERT INTO archivos_subidos (nombre, mime, datos) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE mime = ?, datos = ?");
+            $stmt->execute([$newFileName, $mime, $fileData, $mime, $fileData]);
+        } catch (Exception $e2) {}
+    }
+
+    // 2. Si el sistema de archivos local es escribible (XAMPP / Servidor dedicado), guardar también en disco
+    $targetDir = __DIR__ . '/../../img';
+    if (is_dir($targetDir) && is_writable($targetDir)) {
+        @file_put_contents($targetDir . '/' . $newFileName, $fileData);
+    }
+
+    return $newFileName;
+}
+
 try {
     switch ($action) {
         // --- GUARDAR TEXTOS E IMÁGENES INSTITUCIONALES ---
@@ -46,17 +95,10 @@ try {
 
             // Procesar archivos de imagen, video o documentos subidos en formularios multipart
             if (!empty($_FILES)) {
-                $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'webm', 'pdf'];
                 foreach ($_FILES as $key => $file) {
-                    if (!empty($file['name']) && $file['error'] === UPLOAD_ERR_OK) {
-                        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                        if (in_array($ext, $allowed)) {
-                            $newFileName = 'sec_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $key) . '_' . time() . '.' . $ext;
-                            $targetPath = __DIR__ . '/../../img/' . $newFileName;
-                            if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                                $data[$key] = $newFileName;
-                            }
-                        }
+                    $saved = saveUploadedFile($file, 'sec_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $key));
+                    if ($saved) {
+                        $data[$key] = $saved;
                     }
                 }
             }
@@ -66,10 +108,10 @@ try {
                 $stmt->execute([$clave, $valor, $valor]);
             }
 
-            // Sincronización estática bidireccional instantánea en archivos HTML
+            // Sincronización estática opcional en disco (solo si es escribible, ej: local XAMPP)
             // 1. ExpoTec (pages/expotec.html)
             $expotecPath = __DIR__ . '/../../pages/expotec.html';
-            if (file_exists($expotecPath)) {
+            if (file_exists($expotecPath) && is_writable($expotecPath)) {
                 $expoHtml = file_get_contents($expotecPath);
                 if (!empty($data['expotec_tag'])) {
                     $expoHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<p class="section-tag[^>]*>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['expotec_tag']) . '$3', $expoHtml);
@@ -133,7 +175,7 @@ try {
 
             // 2. La Escuela (pages/escuela.html)
             $escuelaPath = __DIR__ . '/../../pages/escuela.html';
-            if (file_exists($escuelaPath)) {
+            if (file_exists($escuelaPath) && is_writable($escuelaPath)) {
                 $escHtml = file_get_contents($escuelaPath);
                 if (!empty($data['escuela_hero_tag'])) {
                     $escHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<p class="section-tag[^>]*>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['escuela_hero_tag']) . '$3', $escHtml);
@@ -206,7 +248,7 @@ try {
 
             // 3. Portada (index.html)
             $indexPath = __DIR__ . '/../../index.html';
-            if (file_exists($indexPath)) {
+            if (file_exists($indexPath) && is_writable($indexPath)) {
                 $indexHtml = file_get_contents($indexPath);
                 if (!empty($data['hero_foto'])) {
                     $indexHtml = preg_replace('/(<div class="hero-media[^>]*>\s*<img src=")[^"]*(")/s', '$1img/' . $data['hero_foto'] . '$2', $indexHtml);
@@ -240,7 +282,7 @@ try {
 
             // 4. Contacto (pages/contacto.html)
             $contactoPath = __DIR__ . '/../../pages/contacto.html';
-            if (file_exists($contactoPath)) {
+            if (file_exists($contactoPath) && is_writable($contactoPath)) {
                 $conHtml = file_get_contents($contactoPath);
                 if (!empty($data['contacto_telefono'])) {
                     $telClean = preg_replace('/[^0-9]/', '', $data['contacto_telefono']);
@@ -265,17 +307,11 @@ try {
             $duracion = intval($_POST['duracion_anios'] ?? 7);
             $imagen = trim($_POST['imagen'] ?? '');
 
-            // Subida de imagen si viene archivo
+            // Subida de imagen
             if (!empty($_FILES['imagen_archivo']['name'])) {
-                $file = $_FILES['imagen_archivo'];
-                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-                if (in_array($ext, $allowed)) {
-                    $newFileName = 'especialidad_' . time() . '_' . rand(100, 999) . '.' . $ext;
-                    $targetPath = __DIR__ . '/../../img/' . $newFileName;
-                    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                        $imagen = $newFileName;
-                    }
+                $saved = saveUploadedFile($_FILES['imagen_archivo'], 'especialidad');
+                if ($saved) {
+                    $imagen = $saved;
                 }
             }
 
@@ -303,10 +339,10 @@ try {
                 $stmt->execute(['nombre' => $nombre, 'titulo' => $titulo, 'descripcion' => $descripcion, 'icono' => $icono, 'duracion' => $duracion, 'imagen' => $imagen]);
             }
 
-            // Sincronizar index.html para reflejo estático instantáneo
+            // Sincronizar index.html en disco local si es escribible
             if (!empty($imagen) && $id) {
                 $indexPath = __DIR__ . '/../../index.html';
-                if (file_exists($indexPath)) {
+                if (file_exists($indexPath) && is_writable($indexPath)) {
                     $indexHtml = file_get_contents($indexPath);
                     $espNums = [1 => '01', 2 => '02', 3 => '03'];
                     if (isset($espNums[$id])) {
@@ -345,17 +381,10 @@ try {
             $orden = intval($_POST['orden'] ?? 1);
             $imagen = trim($_POST['imagen'] ?? '');
 
-            // Subida de imagen si viene archivo
             if (!empty($_FILES['imagen_archivo']['name'])) {
-                $file = $_FILES['imagen_archivo'];
-                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-                if (in_array($ext, $allowed)) {
-                    $newFileName = 'hito_' . time() . '_' . rand(100, 999) . '.' . $ext;
-                    $targetPath = __DIR__ . '/../../img/' . $newFileName;
-                    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                        $imagen = $newFileName;
-                    }
+                $saved = saveUploadedFile($_FILES['imagen_archivo'], 'hito');
+                if ($saved) {
+                    $imagen = $saved;
                 }
             }
 
@@ -393,17 +422,10 @@ try {
             $destacado = !empty($_POST['destacado']) ? 1 : 0;
             $imagen = trim($_POST['imagen'] ?? '');
 
-            // Subida de imagen si viene archivo
             if (!empty($_FILES['imagen_archivo']['name'])) {
-                $file = $_FILES['imagen_archivo'];
-                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-                if (in_array($ext, $allowed)) {
-                    $newFileName = 'proy_' . time() . '_' . rand(100, 999) . '.' . $ext;
-                    $targetPath = __DIR__ . '/../../img/' . $newFileName;
-                    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                        $imagen = $newFileName;
-                    }
+                $saved = saveUploadedFile($_FILES['imagen_archivo'], 'proy');
+                if ($saved) {
+                    $imagen = $saved;
                 }
             }
 
@@ -433,16 +455,10 @@ try {
         // --- SUBIR IMAGEN GENERAL ---
         case 'upload_image':
             if (!empty($_FILES['image']['name'])) {
-                $file = $_FILES['image'];
-                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-                if (in_array($ext, $allowed)) {
-                    $newFileName = 'img_' . time() . '_' . rand(100, 999) . '.' . $ext;
-                    $targetPath = __DIR__ . '/../../img/' . $newFileName;
-                    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                        echo json_encode(['success' => true, 'filename' => $newFileName, 'url' => '/img/' . $newFileName]);
-                        exit;
-                    }
+                $saved = saveUploadedFile($_FILES['image'], 'img');
+                if ($saved) {
+                    echo json_encode(['success' => true, 'filename' => $saved, 'url' => '/img/' . $saved]);
+                    exit;
                 }
             }
             echo json_encode(['success' => false, 'error' => 'No se pudo subir la imagen']);

@@ -117,6 +117,22 @@ function closeModal(id) {
   if (modal) modal.classList.remove('active');
 }
 
+// HELPER DE COMUNICACIÓN CON LA API
+async function fetchApi(url, options) {
+  try {
+    const res = await fetch(url, options);
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error("Respuesta no JSON del servidor:", text);
+      return { success: false, error: 'Error del servidor (' + res.status + '): ' + text.substring(0, 100) };
+    }
+  } catch (err) {
+    return { success: false, error: 'Error de red o conexión al servidor' };
+  }
+}
+
 // GUARDAR CONTENIDO GENERAL (TEXTOS E IMÁGENES)
 async function saveGeneralContent(e) {
   e.preventDefault();
@@ -141,20 +157,16 @@ async function saveGeneralContent(e) {
     sendData.append(`content[${k}]`, v);
   }
 
-  try {
-    const res = await fetch('api/manage.php?action=save_content', {
-      method: 'POST',
-      body: sendData
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast('Guardado correctamente en la base de datos');
-      setTimeout(() => location.reload(), 900);
-    } else {
-      showToast(data.error || 'Error al guardar', true);
-    }
-  } catch (err) {
-    showToast('Error de conexión con el servidor', true);
+  const data = await fetchApi('api/manage.php?action=save_content', {
+    method: 'POST',
+    body: sendData
+  });
+
+  if (data.success) {
+    showToast('Guardado correctamente en la base de datos');
+    setTimeout(() => location.reload(), 900);
+  } else {
+    showToast(data.error || 'Error al guardar', true);
   }
 }
 
@@ -219,8 +231,7 @@ async function submitEspecialidad(e) {
   const formData = new FormData(e.target);
   formData.append('action', 'save_especialidad');
 
-  const res = await fetch('api/manage.php', { method: 'POST', body: formData });
-  const data = await res.json();
+  const data = await fetchApi('api/manage.php', { method: 'POST', body: formData });
   if (data.success) {
     showToast('Especialidad guardada con éxito');
     setTimeout(() => location.reload(), 800);
@@ -235,8 +246,7 @@ async function deleteEspecialidad(id) {
   formData.append('action', 'delete_especialidad');
   formData.append('id', id);
 
-  const res = await fetch('api/manage.php', { method: 'POST', body: formData });
-  const data = await res.json();
+  const data = await fetchApi('api/manage.php', { method: 'POST', body: formData });
   if (data.success) {
     showToast('Especialidad eliminada');
     setTimeout(() => location.reload(), 800);
@@ -274,8 +284,7 @@ async function submitProyecto(e) {
   const formData = new FormData(e.target);
   formData.append('action', 'save_proyecto');
 
-  const res = await fetch('api/manage.php', { method: 'POST', body: formData });
-  const data = await res.json();
+  const data = await fetchApi('api/manage.php', { method: 'POST', body: formData });
   if (data.success) {
     showToast('Proyecto guardado con éxito');
     setTimeout(() => location.reload(), 800);
@@ -290,8 +299,7 @@ async function deleteProyecto(id) {
   formData.append('action', 'delete_proyecto');
   formData.append('id', id);
 
-  const res = await fetch('api/manage.php', { method: 'POST', body: formData });
-  const data = await res.json();
+  const data = await fetchApi('api/manage.php', { method: 'POST', body: formData });
   if (data.success) {
     showToast('Proyecto eliminado');
     setTimeout(() => location.reload(), 800);
@@ -338,8 +346,7 @@ async function submitHito(e) {
   const formData = new FormData(e.target);
   formData.append('action', 'save_hito');
 
-  const res = await fetch('api/manage.php', { method: 'POST', body: formData });
-  const data = await res.json();
+  const data = await fetchApi('api/manage.php', { method: 'POST', body: formData });
   if (data.success) {
     showToast('Hito guardado con éxito');
     setTimeout(() => location.reload(), 800);
@@ -354,8 +361,7 @@ async function deleteHito(id) {
   formData.append('action', 'delete_hito');
   formData.append('id', id);
 
-  const res = await fetch('api/manage.php', { method: 'POST', body: formData });
-  const data = await res.json();
+  const data = await fetchApi('api/manage.php', { method: 'POST', body: formData });
   if (data.success) {
     showToast('Hito eliminado');
     setTimeout(() => location.reload(), 800);
@@ -379,8 +385,7 @@ async function changePassword(e) {
   formData.append('action', 'change_password');
   formData.append('new_password', pass);
 
-  const res = await fetch('api/manage.php', { method: 'POST', body: formData });
-  const data = await res.json();
+  const data = await fetchApi('api/manage.php', { method: 'POST', body: formData });
   if (data.success) {
     showToast(data.message || 'Contraseña actualizada');
     document.getElementById('new_admin_password').value = '';

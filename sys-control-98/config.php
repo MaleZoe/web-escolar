@@ -6,21 +6,6 @@ if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') !== false ? getenv(
 if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'web_escolar_db');
 if (!defined('DB_PORT')) define('DB_PORT', getenv('DB_PORT') ?: '3306');
 
-// Configuración reforzada de cookies de sesión
-if (session_status() === PHP_SESSION_NONE) {
-    // Si estamos en entorno serverless (Vercel / Lambda) la ruta estándar es read-only
-    if (getenv('VERCEL') || (!empty(session_save_path()) && !is_writable(session_save_path()))) {
-        @session_save_path('/tmp');
-    }
-    ini_set('session.cookie_httponly', 1);
-    ini_set('session.use_only_cookies', 1);
-    ini_set('session.cookie_samesite', 'Strict');
-    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
-        ini_set('session.cookie_secure', 1);
-    }
-    session_start();
-}
-
 function getDB() {
     static $pdo = null;
     if ($pdo === null) {
@@ -56,6 +41,79 @@ function getDB() {
         }
     }
     return $pdo;
+}
+
+// Manejador de sesiones en base de datos para entornos serverless (Vercel / Lambda)
+class PdoSessionHandler implements SessionHandlerInterface {
+    private $pdo;
+    public function __construct($pdo) {
+        $this->pdo = $pdo;
+    }
+    public function open($savePath, $sessionName): bool {
+        return true;
+    }
+    public function close(): bool {
+        return true;
+    }
+    public function read($id): string|false {
+        try {
+            $stmt = $this->pdo->prepare("SELECT datos FROM sesiones_php WHERE id = :id AND ultimo_acceso > :exp");
+            $stmt->execute(['id' => $id, 'exp' => time() - 3600]);
+            $row = $stmt->fetch();
+            return $row ? (string)$row['datos'] : '';
+        } catch (Exception $e) {
+            return '';
+        }
+    }
+    public function write($id, $data): bool {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO sesiones_php (id, datos, ultimo_acceso) VALUES (:id, :d, :t) ON DUPLICATE KEY UPDATE datos = :d2, ultimo_acceso = :t2");
+            return $stmt->execute(['id' => $id, 'd' => $data, 't' => time(), 'd2' => $data, 't2' => time()]);
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+    public function destroy($id): bool {
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM sesiones_php WHERE id = :id");
+            return $stmt->execute(['id' => $id]);
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+    public function gc($maxlifetime): int|false {
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM sesiones_php WHERE ultimo_acceso < :exp");
+            $stmt->execute(['exp' => time() - $maxlifetime]);
+            return $stmt->rowCount();
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+}
+
+// Configuración reforzada de cookies de sesión
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_samesite', 'Lax');
+
+    $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
+               (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    if ($isHttps) {
+        ini_set('session.cookie_secure', 1);
+    }
+
+    try {
+        $db = getDB();
+        $handler = new PdoSessionHandler($db);
+        session_set_save_handler($handler, true);
+    } catch (Exception $e) {
+        if (getenv('VERCEL') || (!empty(session_save_path()) && !is_writable(session_save_path()))) {
+            @session_save_path('/tmp');
+        }
+    }
+    session_start();
 }
 
 // Obtener IP del cliente de forma segura

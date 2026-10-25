@@ -1,4 +1,4 @@
-/* Integración dinámica con MySQL / phpMyAdmin via API */
+/* Integración dinámica con MySQL / TiDB Cloud via API */
 (function () {
   "use strict";
 
@@ -18,13 +18,20 @@
 
       function resolveImg(val) {
         if (!val) return "";
-        if (val.startsWith("http://") || val.startsWith("https://") || val.startsWith("/") || val.startsWith("../")) {
+        if (val.startsWith("data:") || val.startsWith("http://") || val.startsWith("https://") || val.startsWith("/") || val.startsWith("../")) {
           return val;
         }
         return imgPrefix + val;
       }
 
       // ================= 1. HERO, PORTADA & LOGO =================
+      if (c.hero_titulo) {
+        var heroTitle = document.querySelector(".hero-title");
+        if (heroTitle) {
+          heroTitle.innerHTML = c.hero_titulo.replace(/\n/g, "<br>");
+        }
+      }
+
       if (c.hero_foto) {
         var heroImg = document.querySelector(".hero-media img");
         if (heroImg) heroImg.src = resolveImg(c.hero_foto);
@@ -47,6 +54,24 @@
         if (heroSub) heroSub.textContent = c.hero_subtitulo;
         var heroLead = document.querySelector(".hero-lead");
         if (heroLead) heroLead.textContent = c.hero_subtitulo;
+      }
+
+      // Footer general info
+      var fInfo = document.querySelector(".footer-info");
+      if (fInfo) {
+        var dir = c.direccion || "Av. Juan B. Justo 4287, Mar del Plata";
+        var tel = c.contacto_telefono || "(0223) 472-2408";
+        var mail = c.contacto_email || "infoT5@eest5mdp.edu.ar";
+        fInfo.textContent = dir + " · " + tel + " · " + mail;
+      }
+
+      // WhatsApp links
+      if (c.contacto_whatsapp) {
+        var cleanWa = c.contacto_whatsapp.replace(/[^0-9]/g, "");
+        var waLinks = document.querySelectorAll("a[href*='wa.me']");
+        waLinks.forEach(function (a) {
+          a.href = "https://wa.me/" + cleanWa;
+        });
       }
 
       // ================= 2. PÁGINA "LA ESCUELA" =================
@@ -381,6 +406,10 @@
             if (c.inst_aic_pres_texto && presPs[0]) presPs[0].textContent = c.inst_aic_pres_texto;
             if (c.inst_aic_familias_texto && presPs[2]) presPs[2].textContent = c.inst_aic_familias_texto;
           }
+          if (aicCards[1] && c.inst_aic_marco_legal_texto) {
+            var mlP = aicCards[1].querySelector("p");
+            if (mlP) mlP.textContent = c.inst_aic_marco_legal_texto;
+          }
           if (aicCards[2] && c.inst_aic_cap1_texto) {
             var c1P = aicCards[2].querySelector("p:last-of-type");
             if (c1P) c1P.textContent = c.inst_aic_cap1_texto;
@@ -408,18 +437,59 @@
         }
       }
 
-      // ================= 4.8. HITOS HISTÓRICOS (HEADER) =================
+      // ================= 4.8. HITOS HISTÓRICOS (PROYECTOS EMBLEMÁTICOS) =================
       if (c.hitos_tag) {
-        var hTag = document.querySelector(".hitos-tag");
-        if (hTag) hTag.innerHTML = '<span class="hitos-tag-line"></span>' + c.hitos_tag;
+        var htTag = document.querySelector(".hitos-tag");
+        if (htTag) htTag.innerHTML = '<span class="hitos-tag-line"></span>' + c.hitos_tag;
       }
       if (c.hitos_titulo) {
-        var hTitle = document.querySelector(".hitos-title");
-        if (hTitle) hTitle.textContent = c.hitos_titulo;
+        var htTitle = document.querySelector(".hitos-title");
+        if (htTitle) htTitle.textContent = c.hitos_titulo;
       }
       if (c.hitos_descripcion) {
-        var hSub = document.querySelector(".hitos-sub");
-        if (hSub) hSub.textContent = c.hitos_descripcion;
+        var htSub = document.querySelector(".hitos-sub");
+        if (htSub) htSub.textContent = c.hitos_descripcion;
+      }
+
+      if (data.hitos && data.hitos.length > 0) {
+        var hitoArticles = document.querySelectorAll(".hito-v2");
+        data.hitos.forEach(function (hito, idx) {
+          if (idx < hitoArticles.length) {
+            var el = hitoArticles[idx];
+            if (hito.anio) {
+              var yr = el.querySelector(".hito-v2-year");
+              if (yr) yr.innerHTML = hito.anio.replace(/\s*[-–]\s*/g, "<br />");
+            }
+            if (hito.titulo) {
+              var rTit = el.querySelector(".hito-v2-row-title");
+              if (rTit) rTit.textContent = hito.titulo;
+              var cTit = el.querySelector(".hito-v2-card-title");
+              if (cTit) cTit.textContent = hito.titulo;
+            }
+            if (hito.resumen) {
+              var rSum = el.querySelector(".hito-v2-row-summary");
+              if (rSum) rSum.textContent = hito.resumen;
+            }
+            if (hito.descripcion) {
+              var cDesc = el.querySelector(".hito-v2-card-desc");
+              if (cDesc) cDesc.textContent = hito.descripcion;
+            }
+            if (hito.imagen) {
+              var thumb = el.querySelector(".hito-v2-thumb");
+              if (thumb) thumb.src = resolveImg(hito.imagen);
+              var cardImg = el.querySelector(".hito-v2-card-foto img");
+              if (cardImg) cardImg.src = resolveImg(hito.imagen);
+            }
+            if (hito.especialidad) {
+              var espVal = el.querySelector(".hito-v2-pill-val");
+              if (espVal) espVal.textContent = hito.especialidad;
+            }
+            if (hito.enlace) {
+              var actA = el.querySelector(".btn-hito-detalles");
+              if (actA) actA.href = hito.enlace;
+            }
+          }
+        });
       }
 
       // ================= 5. CONTACTO Y FOOTER =================
