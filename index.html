@@ -14,17 +14,41 @@
       property="og:description"
       content="Aprender haciendo. Construir el futuro. Formación técnica en Construcciones, Informática y Electrónica en Mar del Plata."
     />
-    <meta property="og:image" content="/img/hero.jpg" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/styles.css" />
+    <meta property="og:image" content="img/hero.jpg" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="css/styles.css?v=3" />
+    <script>
+      (function () {
+        // Compatibilidad retroactiva con códigos QR impresos y URLs anteriores
+        if (window.location.hash && window.location.hash.indexOf('#/institucionales') !== -1) {
+          var qIdx = window.location.hash.indexOf('?');
+          var qs = qIdx !== -1 ? window.location.hash.substring(qIdx) : '';
+          window.location.replace('pages/institucionales.html' + qs);
+          return;
+        }
+        window.addEventListener('hashchange', function () {
+          if (window.location.hash && window.location.hash.indexOf('#/institucionales') !== -1) {
+            var qIdx = window.location.hash.indexOf('?');
+            var qs = qIdx !== -1 ? window.location.hash.substring(qIdx) : '';
+            window.location.replace('pages/institucionales.html' + qs);
+          }
+        });
+        try {
+          var t = localStorage.getItem("eest5_theme");
+          if (t === "dark" || (!t && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+            document.documentElement.setAttribute("data-theme", "dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
 
     <header class="site-header" id="header">
       <div class="shell header-inner">
-        <a class="brand" href="/" aria-label="Inicio — E.E.S.T. N.º 5 Amancio Williams">
-          <img src="/img/logo.png" alt="Escudo institucional de la E.E.S.T. N.º 5 Amancio Williams" width="48" height="48" />
+        <a class="brand" href="index.html" aria-label="Inicio — E.E.S.T. N.º 5 Amancio Williams">
+          <img src="img/logo.png" alt="Escudo institucional de la E.E.S.T. N.º 5 Amancio Williams" width="48" height="48" />
           <span class="brand-text">
             <strong>E.E.S.T. N.º 5</strong>
             <em>“Amancio Williams” · Mar del Plata</em>
@@ -32,16 +56,37 @@
         </a>
 
         <nav class="nav" id="nav" aria-label="Navegación principal">
-             <a href="pages/escuela.html">La Escuela</a>
+          <a href="pages/escuela.html">La Escuela</a>
+          <a href="#anuncios">Anuncios</a>
           <a href="#especialidades">Especialidades</a>
           <a href="#hitos">Hitos históricos</a>
           <a href="pages/expotec.html">ExpoTec</a>
+          <a href="pages/institucionales.html">Institucionales</a>
           <a class="nav-cta" href="pages/contacto.html">Contacto</a>
         </nav>
 
-        <button class="burger" id="burger" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav">
-          <span></span><span></span><span></span>
-        </button>
+        <div class="header-right">
+          <button class="theme-toggle" id="themeToggle" type="button" aria-label="Cambiar tema claro u oscuro" title="Cambiar tema">
+            <svg class="theme-icon theme-icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="theme-icon theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <button class="burger" id="burger" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
       </div>
       <div class="header-rule" aria-hidden="true"></div>
     </header>
@@ -50,7 +95,7 @@
       <!-- HERO -->
       <section class="hero" id="inicio">
         <div class="hero-media">
-          <img src="/img/hero.jpg" alt="Fachada de la E.E.S.T. N.º 5 “Amancio Williams” con el cartel luminoso EEST N.º 5" width="1454" height="1082" />
+          <img src="img/hero.jpg" alt="Fachada de la E.E.S.T. N.º 5 “Amancio Williams” con el cartel luminoso EEST N.º 5" width="1454" height="1082" />
         </div>
         <div class="hero-grid" aria-hidden="true"></div>
 
@@ -86,6 +131,48 @@
         </div>
       </section>
 
+      <!-- ANUNCIOS E INSTAGRAM -->
+      <section class="section anuncios reveal" id="anuncios">
+        <div class="shell">
+          <div class="anuncios-head-row">
+            <header class="section-head">
+              <p class="section-tag">Anuncios</p>
+              <h2 class="h2">Novedades e Instagram Oficial</h2>
+              <p class="anuncios-sub">
+                Enterate al instante de los comunicados institucionales, actividades y fechas importantes publicadas en nuestro Instagram.
+              </p>
+            </header>
+            <div class="ig-carousel-arrows" aria-label="Controles del carrusel">
+              <button type="button" class="ig-nav-btn ig-prev" id="igPrevBtn" aria-label="Publicaciones anteriores" title="Anterior" disabled>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <button type="button" class="ig-nav-btn ig-next" id="igNextBtn" aria-label="Publicaciones siguientes" title="Siguiente">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="ig-carousel-wrapper" id="igCarouselWrapper">
+            <div class="ig-carousel-track" id="igCarouselTrack" tabindex="0" role="region" aria-label="Carrusel de publicaciones de Instagram">
+              <div class="ig-card-skeleton" aria-hidden="true"></div>
+              <div class="ig-card-skeleton" aria-hidden="true"></div>
+              <div class="ig-card-skeleton" aria-hidden="true"></div>
+            </div>
+          </div>
+
+          <div class="cta-row" style="margin-top: 2rem;">
+            <a class="btn btn-instagram" href="https://www.instagram.com/tecnicacinco_mdq/" target="_blank" rel="noopener noreferrer">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+              </svg>
+              Seguinos en Instagram @tecnicacinco_mdq ↗
+            </a>
+          </div>
+        </div>
+      </section>
+
       <!-- ESPECIALIDADES -->
       <section class="section especialidades" id="especialidades">
         <div class="shell">
@@ -106,7 +193,7 @@
                 </p>
               </div>
               <div class="esp-foto">
-                <img src="/img/construcciones.jpg" alt="Manos de un estudiante dibujando planos junto a una maqueta arquitectónica" width="1200" height="1504" loading="lazy" />
+                <img src="img/especialidad_1792960238_695.png" alt="Manos de un estudiante dibujando planos junto a una maqueta arquitectónica" width="1200" height="1504" loading="lazy" />
               </div>
             </article>
 
@@ -121,7 +208,7 @@
                 </p>
               </div>
               <div class="esp-foto">
-                <img src="/img/informatica.jpg" alt="Estudiantes programando en el laboratorio de informática" width="1200" height="1504" loading="lazy" />
+                <img src="img/especialidad_1792959435_436.png" alt="Estudiantes programando en el laboratorio de informática" width="1200" height="1504" loading="lazy" />
               </div>
             </article>
 
@@ -136,13 +223,13 @@
                 </p>
               </div>
               <div class="esp-foto">
-                <img src="/img/electronica.jpg" alt="Estudiante soldando una placa de circuito en el laboratorio de electrónica" width="1200" height="1504" loading="lazy" />
+                <img src="img/electronica.jpg" alt="Estudiante soldando una placa de circuito en el laboratorio de electrónica" width="1200" height="1504" loading="lazy" />
               </div>
             </article>
           </div>
 
           <div class="cta-row reveal">
-            <a class="btn btn-ghost" href="/escuela">Cómo se enseña en la escuela</a>
+            <a class="btn btn-ghost" href="pages/escuela.html">Cómo se enseña en la escuela</a>
           </div>
         </div>
       </section>
@@ -150,173 +237,525 @@
       <!-- HITOS HISTÓRICOS -->
       <section class="section hitos" id="hitos">
         <div class="shell">
-          <header class="section-head reveal">
-            <p class="section-tag">Hitos históricos</p>
-            <h2 class="h2">Una línea de tiempo hecha de proyectos.</h2>
-            <p class="lead">
-              Cada año deja algo construido. Tocá un hito para ampliar la información y ver la imagen del proyecto.
-            </p>
-          </header>
+          <!-- Section Header with Title -->
+          <div class="hitos-header reveal">
+            <div class="hitos-header-main">
+              <p class="hitos-tag"><span class="hitos-tag-line"></span>HITOS HISTÓRICOS</p>
+              <h2 class="hitos-title">Una línea de tiempo hecha de proyectos.</h2>
+              <p class="hitos-sub">
+                Cada año deja múltiples proyectos construidos. Tocá cada hito para ver más información, imágenes y detalles del proyecto.
+              </p>
+            </div>
+          </div>
 
-          <ol class="timeline">
-            <li class="hito reveal">
-              <button class="hito-head" type="button" aria-expanded="false" aria-controls="hito-2019">
-                <span class="hito-anio">2019</span>
-                <span class="hito-titulo">SatDuino · primer nano satélite escolar de Sudamérica</span>
-                <span class="hito-mas" aria-hidden="true"></span>
-              </button>
-              <div class="hito-panel" id="hito-2019" hidden>
-                <div class="hito-panel-grid">
-                  <div>
-                    <p class="body">
-                      Estudiantes de 7.º año y docentes diseñaron y construyeron <strong>SatDuino</strong>, un nano
-                      satélite de <strong>5 × 5 × 5 cm</strong> —del tamaño de un cubo mágico— pensado para proveer
-                      tecnología espacial de muy bajo costo, con aplicaciones en el cuidado del medio ambiente y la
-                      agricultura. El prototipo se fabricó en tamaño real y funciona.
-                    </p>
-                    <p class="body">
-                      Por ser el primer nano satélite de Sudamérica diseñado por estudiantes secundarios, el equipo fue
-                      invitado al <strong>3.º Congreso Mundial de Nano Satélites</strong> en <strong>Glasgow,
-                      Escocia</strong>, y viajó el 1.º de septiembre de 2019 con apoyo de la provincia de Buenos Aires.
-                      La comunidad vendió bonos contribución desde la cooperadora para costear parte de la estadía.
-                    </p>
-                    <ul class="hito-datos">
-                      <li><span>Medidas</span><p>5 × 5 × 5 cm</p></li>
-                      <li><span>Destino</span><p>Glasgow, Escocia</p></li>
-                      <li><span>Equipo</span><p>7.º año y docentes</p></li>
-                    </ul>
-                    <p class="nota">
-                      Fuente:
-                      <a href="https://www.lacapitalmdp.com/los-alumnos-de-la-tecnica-n5-van-a-escocia-con-su-nano-satelite/" target="_blank" rel="noopener">Diario La Capital, 22/08/2019</a>.
+          <!-- Timeline -->
+          <div class="hitos-timeline">
+
+            <!-- 2018 - FaciliArt (expanded by default) -->
+            <article class="hito-v2 reveal is-expanded" id="hito-2018">
+              <div class="hito-v2-marker">
+                <span class="hito-v2-year">2018</span>
+                <span class="hito-v2-dot" aria-hidden="true"></span>
+              </div>
+
+              <div class="hito-v2-body">
+                <!-- Row View (Collapsed state) -->
+                <div class="hito-v2-row" role="button" aria-expanded="true" aria-controls="hito-panel-2018" tabindex="0">
+                  <div class="hito-v2-row-text">
+                    <h3 class="hito-v2-row-title">FaciliArt · Impresión 3D solidaria para la salud</h3>
+                    <p class="hito-v2-row-summary">
+                      Estudiantes y docentes desarrollaron FaciliArt, un proyecto solidario utilizando impresoras 3D para la confección de prótesis de miembros superiores, férulas inmovilizadoras y bio-réplicas anatómicas a partir de tomografías computadas.
                     </p>
                   </div>
-                  <figure class="hito-foto">
-                    <img src="/img/satduino.jpg" alt="Prototipo de nano satélite cúbico con placas electrónicas y paneles solares" width="1600" height="1104" loading="lazy" />
-                    <figcaption>Imagen de referencia del prototipo tipo CubeSat</figcaption>
-                  </figure>
-                </div>
-              </div>
-            </li>
-
-            <li class="hito reveal">
-              <button class="hito-head" type="button" aria-expanded="false" aria-controls="hito-2022">
-                <span class="hito-anio">2022</span>
-                <span class="hito-titulo">Automatización y control con microcontroladores</span>
-                <span class="hito-mas" aria-hidden="true"></span>
-              </button>
-              <div class="hito-panel" id="hito-2022" hidden>
-                <div class="hito-panel-grid">
-                  <div>
-                    <p class="body">
-                      Los equipos de Electrónica desarrollaron placas propias y sistemas de control con sensores:
-                      medición de temperatura y humedad, tableros de comando y prototipos de robótica programados por
-                      los propios estudiantes.
-                    </p>
-                    <ul class="hito-datos">
-                      <li><span>Especialidad</span><p>Electrónica</p></li>
-                      <li><span>Formato</span><p>Prototipos funcionales</p></li>
-                      <li><span>Muestra</span><p>ExpoTec</p></li>
-                    </ul>
-                    <p class="nota">Detalle de proyectos y autores: a confirmar por la institución.</p>
+                  <div class="hito-v2-row-right">
+                    <img src="img/faciliart.jpg" alt="Alumnos y docentes galardonados por el proyecto FaciliArt" class="hito-v2-thumb" width="160" height="100" loading="lazy" />
+                    <button type="button" class="hito-v2-btn-toggle" aria-label="Abrir o cerrar hito 2018">
+                      <svg class="icon-toggle" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="line-v" d="M7 1v12"/><path d="M1 7h12"/></svg>
+                    </button>
                   </div>
-                  <figure class="hito-foto">
-                    <img src="/img/electronica.jpg" alt="Montaje de un circuito electrónico en el laboratorio" width="1200" height="1504" loading="lazy" />
-                    <figcaption>Laboratorio de electrónica</figcaption>
-                  </figure>
                 </div>
-              </div>
-            </li>
 
-            <li class="hito reveal">
-              <button class="hito-head" type="button" aria-expanded="false" aria-controls="hito-2023">
-                <span class="hito-anio">2023</span>
-                <span class="hito-titulo">Proyectos de obra: planos, maquetas y cómputo de materiales</span>
-                <span class="hito-mas" aria-hidden="true"></span>
-              </button>
-              <div class="hito-panel" id="hito-2023" hidden>
-                <div class="hito-panel-grid">
-                  <div>
-                    <p class="body">
-                      Construcciones presentó proyectos de vivienda y de intervención urbana: relevamiento del terreno,
-                      planos completos, maquetas a escala y cómputo de materiales con presupuesto, defendidos frente a
-                      docentes y familias.
-                    </p>
-                    <ul class="hito-datos">
-                      <li><span>Especialidad</span><p>Construcciones</p></li>
-                      <li><span>Producto</span><p>Planos y maquetas</p></li>
-                      <li><span>Año</span><p>7.º año</p></li>
-                    </ul>
-                    <p class="nota">Detalle de proyectos y autores: a confirmar por la institución.</p>
+                <!-- Card View (Expanded state) -->
+                <div class="hito-v2-card" id="hito-panel-2018">
+                  <div class="hito-v2-card-grid">
+                    <div class="hito-v2-card-main">
+                      <span class="hito-v2-badge">PROYECTO DESTACADO</span>
+                      <h3 class="hito-v2-card-title">FaciliArt · Impresión 3D solidaria para la salud</h3>
+                      <p class="hito-v2-card-desc">
+                        Estudiantes y docentes desarrollaron <strong>FaciliArt</strong>, un proyecto solidario utilizando impresoras 3D para la confección de prótesis de miembros superiores, férulas inmovilizadoras (reemplazo higiénico del yeso) y bio-réplicas anatómicas a partir de tomografías computadas. Las piezas fueron donadas al <strong>Hospital Materno Infantil (HIEMI)</strong> de Mar del Plata para permitir a los médicos planificar cirugías complejas. El proyecto fue distinguido en el certamen <strong>Docentes Innovadores 2018</strong>.
+                      </p>
+
+                      <div class="hito-v2-pills">
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">ESPECIALIDAD</span>
+                            <span class="hito-v2-pill-val">Electrónica y 3D</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><line x1="8" y1="6" x2="8.01" y2="6"></line><line x1="16" y1="6" x2="16.01" y2="6"></line><line x1="12" y1="6" x2="12.01" y2="6"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="12" y1="14" x2="12.01" y2="14"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">DESTINO</span>
+                            <span class="hito-v2-pill-val">Hospital Materno Infantil</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">PREMIO</span>
+                            <span class="hito-v2-pill-val">Docentes Innovadores 2018</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="hito-v2-actions">
+                        <a href="https://www.educ.ar/recursos/150219/faciliart-un-proyecto-solidario-con-impresoras-3d" target="_blank" rel="noopener" class="btn-hito-detalles">
+                          Ver más detalles <span aria-hidden="true">→</span>
+                        </a>
+                        <button type="button" class="hito-v2-btn-close" aria-label="Contraer hito">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 7h12"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <figure class="hito-v2-card-foto">
+                      <img src="img/faciliart.jpg" alt="Alumnos y docentes galardonados por el proyecto FaciliArt" width="1200" height="900" loading="lazy" />
+                      <figcaption>Alumnos y docentes distinguidos en el Palacio Sarmiento.</figcaption>
+                    </figure>
                   </div>
-                  <figure class="hito-foto">
-                    <img src="/img/construcciones.jpg" alt="Planos y maqueta de un proyecto de obra" width="1200" height="1504" loading="lazy" />
-                    <figcaption>Taller de proyecto y obra</figcaption>
-                  </figure>
                 </div>
               </div>
-            </li>
+            </article>
 
-            <li class="hito reveal">
-              <button class="hito-head" type="button" aria-expanded="false" aria-controls="hito-2024">
-                <span class="hito-anio">2024</span>
-                <span class="hito-titulo">Desarrollos de software y redes de la especialidad Informática</span>
-                <span class="hito-mas" aria-hidden="true"></span>
-              </button>
-              <div class="hito-panel" id="hito-2024" hidden>
-                <div class="hito-panel-grid">
-                  <div>
-                    <p class="body">
-                      Aplicaciones web y de escritorio, videojuegos, bases de datos, armado de equipos y configuración
-                      de redes. Cada grupo mostró su desarrollo funcionando en pantalla durante la ExpoTec.
-                    </p>
-                    <ul class="hito-datos">
-                      <li><span>Especialidad</span><p>Informática</p></li>
-                      <li><span>Producto</span><p>Apps, redes y datos</p></li>
-                      <li><span>Muestra</span><p>ExpoTec</p></li>
-                    </ul>
-                    <p><a class="btn btn-primary" href="/expotec">Ver la ExpoTec</a></p>
-                  </div>
-                  <figure class="hito-foto">
-                    <img src="/img/informatica.jpg" alt="Estudiantes desarrollando software en el laboratorio de informática" width="1200" height="1504" loading="lazy" />
-                    <figcaption>Laboratorio de informática</figcaption>
-                  </figure>
-                </div>
+            <!-- 2019 - SatDuino -->
+            <article class="hito-v2 reveal" id="hito-2019">
+              <div class="hito-v2-marker">
+                <span class="hito-v2-year">2019</span>
+                <span class="hito-v2-dot" aria-hidden="true"></span>
               </div>
-            </li>
 
-            <li class="hito reveal">
-              <button class="hito-head" type="button" aria-expanded="false" aria-controls="hito-2025">
-                <span class="hito-anio">2025</span>
-                <span class="hito-titulo">Casco Iron Man y Asistente JARVIS</span>
-                <span class="hito-mas" aria-hidden="true"></span>
-              </button>
-              <div class="hito-panel" id="hito-2025" hidden>
-                <div class="hito-panel-grid">
-                  <div>
-                    <p class="body">
-                      Construcción del casco de Iron Man mediante modelado e impresión 3D, ensamblado y pintura, integrando hardware electrónico con servomotores y luces LED. Además, se desarrolló JARVIS, un asistente de inteligencia artificial offline para el control del sistema por voz y automatización.
-                    </p>
-                    <ul class="hito-datos">
-                      <li><span>Especialidad</span><p>Informática</p></li>
-                      <li><span>Producto</span><p>Hardware, Software e IA</p></li>
-                      <li><span>Muestra</span><p>ExpoTec</p></li>
-                    </ul>
-                    <p class="nota">
-                      Más información:
-                      <a href="https://mk-nexus.vercel.app/ironman.html" target="_blank" rel="noopener" style="color: #007bff; text-decoration: underline; font-weight: 500;">https://mk-nexus.vercel.app/ironman.html</a>
+              <div class="hito-v2-body">
+                <div class="hito-v2-row" role="button" aria-expanded="false" aria-controls="hito-panel-2019" tabindex="0">
+                  <div class="hito-v2-row-text">
+                    <h3 class="hito-v2-row-title">SatDuino · primer nano satélite escolar de Sudamérica</h3>
+                    <p class="hito-v2-row-summary">
+                      Desarrollo y lanzamiento del primer nano satélite escolar de Sudamérica, integrando conocimientos de electrónica, programación y comunicaciones.
                     </p>
                   </div>
-                  <figure class="hito-foto">
-                    <img src="/img/ironman.png" alt="Casco Iron Man y Asistente JARVIS" width="1200" height="1504" loading="lazy" />
-                    <figcaption>Proyecto Casco Iron Man y JARVIS</figcaption>
-                  </figure>
+                  <div class="hito-v2-row-right">
+                    <img src="img/satduino.jpg" alt="Placa de circuito del proyecto SatDuino" class="hito-v2-thumb" width="160" height="100" loading="lazy" />
+                    <button type="button" class="hito-v2-btn-toggle" aria-label="Abrir o cerrar hito 2019">
+                      <svg class="icon-toggle" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="line-v" d="M7 1v12"/><path d="M1 7h12"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="hito-v2-card" id="hito-panel-2019" hidden>
+                  <div class="hito-v2-card-grid">
+                    <div class="hito-v2-card-main">
+                      <span class="hito-v2-badge">PROYECTO DESTACADO</span>
+                      <h3 class="hito-v2-card-title">SatDuino · primer nano satélite escolar de Sudamérica</h3>
+                      <p class="hito-v2-card-desc">
+                        Estudiantes de 7.º año y docentes diseñaron y construyeron <strong>SatDuino</strong>, un nano satélite de <strong>5 × 5 × 5 cm</strong> —del tamaño de un cubo mágico— pensado para proveer tecnología espacial de muy bajo costo, con aplicaciones en el cuidado del medio ambiente y la agricultura. El prototipo se fabricó en tamaño real y funciona.<br /><br />
+                        Por ser el primer nano satélite de Sudamérica diseñado por estudiantes secundarios, el equipo fue invitado al <strong>3.º Congreso Mundial de Nano Satélites</strong> en <strong>Glasgow, Escocia</strong>, y viajó el 1.º de septiembre de 2019 con apoyo de la provincia de Buenos Aires. La comunidad vendió bonos contribución desde la cooperadora para costear parte de la estadía.
+                      </p>
+
+                      <div class="hito-v2-pills">
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">MEDIDAS</span>
+                            <span class="hito-v2-pill-val">5 × 5 × 5 cm</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><line x1="8" y1="6" x2="8.01" y2="6"></line><line x1="16" y1="6" x2="16.01" y2="6"></line><line x1="12" y1="6" x2="12.01" y2="6"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="12" y1="14" x2="12.01" y2="14"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">DESTINO</span>
+                            <span class="hito-v2-pill-val">Glasgow, Escocia</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">EQUIPO</span>
+                            <span class="hito-v2-pill-val">7.º año y docentes</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="hito-v2-actions">
+                        <a href="https://www.lacapitalmdp.com/los-alumnos-de-la-tecnica-n5-van-a-escocia-con-su-nano-satelite/" target="_blank" rel="noopener" class="btn-hito-detalles">
+                          Ver más detalles <span aria-hidden="true">→</span>
+                        </a>
+                        <button type="button" class="hito-v2-btn-close" aria-label="Contraer hito">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 7h12"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <figure class="hito-v2-card-foto">
+                      <img src="img/satduino.jpg" alt="Placa de circuito del proyecto SatDuino" width="1200" height="900" loading="lazy" />
+                      <figcaption>Placa de circuito del proyecto SatDuino</figcaption>
+                    </figure>
+                  </div>
                 </div>
               </div>
-            </li>
-          </ol>
-          <p class="nota">Los hitos y sus fechas se irán completando con documentación oficial de la institución.</p>
-          <div class="cta-row reveal">
-            <a class="btn btn-primary" href="/expotec">Ver proyectos de la ExpoTec</a>
+            </article>
+
+            <!-- 2022 - Picosatélite MDQube-SAT1 -->
+            <article class="hito-v2 reveal" id="hito-2022-satelite">
+              <div class="hito-v2-marker">
+                <span class="hito-v2-year">2022</span>
+                <span class="hito-v2-dot" aria-hidden="true"></span>
+              </div>
+
+              <div class="hito-v2-body">
+                <div class="hito-v2-row" role="button" aria-expanded="false" aria-controls="hito-panel-2022-satelite" tabindex="0">
+                  <div class="hito-v2-row-text">
+                    <h3 class="hito-v2-row-title">Picosatélite MDQube-SAT1 “General San Martín”</h3>
+                    <p class="hito-v2-row-summary">
+                      Diseño y desarrollo de un picosatélite educativo con el objetivo de fomentar la investigación tecnológica y el trabajo interdisciplinario en la escuela.
+                    </p>
+                  </div>
+                  <div class="hito-v2-row-right">
+                    <img src="img/mdqube-sat1.png" alt="Picosatélite MDQube-SAT1 de Innova Space" class="hito-v2-thumb" width="160" height="100" loading="lazy" />
+                    <button type="button" class="hito-v2-btn-toggle" aria-label="Abrir o cerrar hito 2022 Satélite">
+                      <svg class="icon-toggle" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="line-v" d="M7 1v12"/><path d="M1 7h12"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="hito-v2-card" id="hito-panel-2022-satelite" hidden>
+                  <div class="hito-v2-card-grid">
+                    <div class="hito-v2-card-main">
+                      <span class="hito-v2-badge">PROYECTO DESTACADO</span>
+                      <h3 class="hito-v2-card-title">Picosatélite MDQube-SAT1 “General San Martín”</h3>
+                      <p class="hito-v2-card-desc">
+                        Desarrollo del primer picosatélite de Latinoamérica en la escuela técnica (EEST N°5) por estudiantes y el profesor Alejandro Cordero. Diseñado para brindar conectividad de Internet de las Cosas (IoT) en áreas rurales, dio origen a la startup Innova Space y fue lanzado al espacio desde Cabo Cañaveral a través de SpaceX.
+                      </p>
+
+                      <div class="hito-v2-pills">
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">ESPECIALIDAD</span>
+                            <span class="hito-v2-pill-val">Electrónica</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><line x1="8" y1="6" x2="8.01" y2="6"></line><line x1="16" y1="6" x2="16.01" y2="6"></line><line x1="12" y1="6" x2="12.01" y2="6"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="12" y1="14" x2="12.01" y2="14"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">PRODUCTO</span>
+                            <span class="hito-v2-pill-val">Picosatélite (IoT)</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">HITO</span>
+                            <span class="hito-v2-pill-val">Lanzamiento SpaceX</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="hito-v2-actions">
+                        <a href="https://www.lacapitalmdp.com/cuenta-regresiva-para-un-hito-aeroespacial-que-nacio-en-una-escuela-de-mar-del-plata/" target="_blank" rel="noopener" class="btn-hito-detalles">
+                          Ver más detalles <span aria-hidden="true">→</span>
+                        </a>
+                        <button type="button" class="hito-v2-btn-close" aria-label="Contraer hito">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 7h12"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <figure class="hito-v2-card-foto">
+                      <img src="img/mdqube-sat1.png" alt="Picosatélite MDQube-SAT1 de Innova Space" width="1200" height="900" loading="lazy" />
+                      <figcaption>Picosatélite MDQube-SAT1 - Innova Space</figcaption>
+                    </figure>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- 2022 - Recordame -->
+            <article class="hito-v2 reveal" id="hito-2022-recordame">
+              <div class="hito-v2-marker">
+                <span class="hito-v2-year">2022</span>
+                <span class="hito-v2-dot" aria-hidden="true"></span>
+              </div>
+
+              <div class="hito-v2-body">
+                <div class="hito-v2-row" role="button" aria-expanded="false" aria-controls="hito-panel-2022-recordame" tabindex="0">
+                  <div class="hito-v2-row-text">
+                    <h3 class="hito-v2-row-title">"Recordame" · App con IA para personas con Alzheimer</h3>
+                    <p class="hito-v2-row-summary">
+                      Aplicación móvil que utiliza inteligencia artificial para ayudar a personas con Alzheimer a recordar rutinas, eventos y contactos importantes.
+                    </p>
+                  </div>
+                  <div class="hito-v2-row-right">
+                    <img src="img/recordame.jpg" alt="Estudiantes desarrolladores de la app Recordame" class="hito-v2-thumb" width="160" height="100" loading="lazy" />
+                    <button type="button" class="hito-v2-btn-toggle" aria-label="Abrir o cerrar hito 2022 Recordame">
+                      <svg class="icon-toggle" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="line-v" d="M7 1v12"/><path d="M1 7h12"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="hito-v2-card" id="hito-panel-2022-recordame" hidden>
+                  <div class="hito-v2-card-grid">
+                    <div class="hito-v2-card-main">
+                      <span class="hito-v2-badge">PROYECTO DESTACADO</span>
+                      <h3 class="hito-v2-card-title">"Recordame" · App con IA para personas con Alzheimer</h3>
+                      <p class="hito-v2-card-desc">
+                        Estudiantes de 7.º año de Informática desarrollaron <strong>"Recordame"</strong>, una aplicación multimedia orientada a facilitar el reconocimiento de personas y recuerdos en personas con Alzheimer. El proyecto integró programación, reconocimiento facial, fotografías, música y recursos digitales con una problemática social concreta, sumando geolocalización y juegos de estimulación cognitiva.
+                      </p>
+
+                      <div class="hito-v2-pills">
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">ESPECIALIDAD</span>
+                            <span class="hito-v2-pill-val">Informática</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">PRODUCTO</span>
+                            <span class="hito-v2-pill-val">App Android e iOS</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">ENFOQUE</span>
+                            <span class="hito-v2-pill-val">Reconocimiento facial e IA</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="hito-v2-actions">
+                        <a href="https://www.lacapitalmdp.com/recordame-la-app-marplatense-hecha-por-alumnos-para-personas-con-alzheimer/" target="_blank" rel="noopener" class="btn-hito-detalles">
+                          Ver más detalles <span aria-hidden="true">→</span>
+                        </a>
+                        <button type="button" class="hito-v2-btn-close" aria-label="Contraer hito">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 7h12"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <figure class="hito-v2-card-foto">
+                      <img src="img/recordame.jpg" alt="Estudiantes desarrolladores de la app Recordame y docente" width="1200" height="900" loading="lazy" />
+                      <figcaption>Desarrolladores de Recordame junto a la docente Paola Flament</figcaption>
+                    </figure>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- 2023–2024 - Tranqui -->
+            <article class="hito-v2 reveal" id="hito-2023-2024-tranqui">
+              <div class="hito-v2-marker">
+                <span class="hito-v2-year">2023<br />2024</span>
+                <span class="hito-v2-dot" aria-hidden="true"></span>
+              </div>
+
+              <div class="hito-v2-body">
+                <div class="hito-v2-row" role="button" aria-expanded="false" aria-controls="hito-panel-2023-2024-tranqui" tabindex="0">
+                  <div class="hito-v2-row-text">
+                    <h3 class="hito-v2-row-title">"Tranqui" · App de prevención y orientación</h3>
+                    <p class="hito-v2-row-summary">
+                      Desarrollo de una aplicación orientada a la prevención y orientación en temáticas de salud mental, con recursos, contactos y herramientas interactivas.
+                    </p>
+                  </div>
+                  <div class="hito-v2-row-right">
+                    <img src="img/tranqui.png" alt="Estudiantes mostrando la app Tranqui" class="hito-v2-thumb" width="160" height="100" loading="lazy" />
+                    <button type="button" class="hito-v2-btn-toggle" aria-label="Abrir o cerrar hito Tranqui">
+                      <svg class="icon-toggle" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="line-v" d="M7 1v12"/><path d="M1 7h12"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="hito-v2-card" id="hito-panel-2023-2024-tranqui" hidden>
+                  <div class="hito-v2-card-grid">
+                    <div class="hito-v2-card-main">
+                      <span class="hito-v2-badge">PROYECTO DESTACADO</span>
+                      <h3 class="hito-v2-card-title">"Tranqui" · App de prevención y orientación</h3>
+                      <p class="hito-v2-card-desc">
+                        Estudiantes de Informática participaron en el desarrollo y actualización de <strong>"Tranqui"</strong>, una aplicación de prevención y orientación articulada con la Facultad de Psicología de la Universidad Nacional de Mar del Plata y profesionales especializados. La propuesta integró tecnología y concientización social, recibiendo posteriormente tratamiento institucional en el ámbito municipal.
+                      </p>
+
+                      <div class="hito-v2-pills">
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">ESPECIALIDAD</span>
+                            <span class="hito-v2-pill-val">Informática</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><line x1="8" y1="6" x2="8.01" y2="6"></line><line x1="16" y1="6" x2="16.01" y2="6"></line><line x1="12" y1="6" x2="12.01" y2="6"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="12" y1="14" x2="12.01" y2="14"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">ARTICULACIÓN</span>
+                            <span class="hito-v2-pill-val">UNMDP (Psicología)</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">ALCANCE</span>
+                            <span class="hito-v2-pill-val">Interés Municipal</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="hito-v2-actions">
+                        <a href="https://gacetaeducativa.com.ar/mar-del-plata-estudiantes-de-la-tecnica-n5-presentan-la-app-tranqui/" target="_blank" rel="noopener" class="btn-hito-detalles">
+                          Ver más detalles <span aria-hidden="true">→</span>
+                        </a>
+                        <button type="button" class="hito-v2-btn-close" aria-label="Contraer hito">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 7h12"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <figure class="hito-v2-card-foto">
+                      <img src="img/tranqui.png" alt="Estudiantes mostrando la app Tranqui en sus celulares" width="1200" height="900" loading="lazy" />
+                      <figcaption>Estudiantes creadores de la app Tranqui</figcaption>
+                    </figure>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- 2025 - Iron Man -->
+            <article class="hito-v2 reveal" id="hito-2025">
+              <div class="hito-v2-marker">
+                <span class="hito-v2-year">2025</span>
+                <span class="hito-v2-dot" aria-hidden="true"></span>
+              </div>
+
+              <div class="hito-v2-body">
+                <div class="hito-v2-row" role="button" aria-expanded="false" aria-controls="hito-panel-2025" tabindex="0">
+                  <div class="hito-v2-row-text">
+                    <h3 class="hito-v2-row-title">Casco Iron Man y Asistente JARVIS</h3>
+                    <p class="hito-v2-row-summary">
+                      Construcción del casco de Iron Man mediante modelado e impresión 3D, ensamblado y pintura, integrando hardware electrónico con servomotores y luces LED.
+                    </p>
+                  </div>
+                  <div class="hito-v2-row-right">
+                    <img src="img/ironman.png" alt="Casco Iron Man y Asistente JARVIS" class="hito-v2-thumb" width="160" height="100" loading="lazy" />
+                    <button type="button" class="hito-v2-btn-toggle" aria-label="Abrir o cerrar hito 2025 Iron Man">
+                      <svg class="icon-toggle" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="line-v" d="M7 1v12"/><path d="M1 7h12"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="hito-v2-card" id="hito-panel-2025" hidden>
+                  <div class="hito-v2-card-grid">
+                    <div class="hito-v2-card-main">
+                      <span class="hito-v2-badge">PROYECTO DESTACADO</span>
+                      <h3 class="hito-v2-card-title">Casco Iron Man y Asistente JARVIS</h3>
+                      <p class="hito-v2-card-desc">
+                        Construcción del casco de Iron Man mediante modelado e impresión 3D, ensamblado y pintura, integrando hardware electrónico con servomotores y luces LED. Además, se desarrolló JARVIS, un asistente de inteligencia artificial offline para el control del sistema por voz y automatización.
+                      </p>
+
+                      <div class="hito-v2-pills">
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">ESPECIALIDAD</span>
+                            <span class="hito-v2-pill-val">Informática</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><line x1="8" y1="6" x2="8.01" y2="6"></line><line x1="16" y1="6" x2="16.01" y2="6"></line><line x1="12" y1="6" x2="12.01" y2="6"></line><line x1="12" y1="10" x2="12.01" y2="10"></line><line x1="12" y1="14" x2="12.01" y2="14"></line></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">PRODUCTO</span>
+                            <span class="hito-v2-pill-val">Hardware, Software e IA</span>
+                          </div>
+                        </div>
+
+                        <div class="hito-v2-pill">
+                          <span class="hito-v2-pill-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+                          </span>
+                          <div class="hito-v2-pill-content">
+                            <span class="hito-v2-pill-label">MUESTRA</span>
+                            <span class="hito-v2-pill-val">ExpoTec</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="hito-v2-actions">
+                        <a href="https://dardansoft.com/projects/hardware/ironman" target="_blank" rel="noopener" class="btn-hito-detalles">
+                          Ver más detalles <span aria-hidden="true">→</span>
+                        </a>
+                        <button type="button" class="hito-v2-btn-close" aria-label="Contraer hito">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 7h12"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <figure class="hito-v2-card-foto">
+                      <img src="img/ironman.png" alt="Casco Iron Man y Asistente JARVIS" width="1200" height="900" loading="lazy" />
+                      <figcaption>Proyecto Casco Iron Man y JARVIS</figcaption>
+                    </figure>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+          </div>
+
+          <div class="cta-row reveal" style="margin-top: 3rem;">
+            <a class="btn btn-primary" href="pages/expotec.html">Ver proyectos de la ExpoTec</a>
           </div>
         </div>
       </section>
@@ -326,38 +765,68 @@
     <footer class="footer">
       <div class="shell footer-top">
         <div class="footer-brand">
-          <img src="/img/logo.png" alt="Escudo institucional de la escuela" width="64" height="64" loading="lazy" />
-          <p class="footer-name">
-            <strong>E.E.S.T. N.º 5 “Amancio Williams”</strong><br />
-            Escuela de Educación Secundaria Técnica · Mar del Plata
+          <div class="footer-brand-header">
+            <img src="img/logo.png" alt="Escudo institucional de la escuela" width="64" height="64" loading="lazy" />
+            <p class="footer-name">
+              <strong>E.E.S.T. N.º 5 “Amancio Williams”</strong><br />
+              Escuela de Educación Secundaria Técnica · Mar del Plata
+            </p>
+          </div>
+          <p class="footer-info">
+            Juan B. Justo 4287 · (0223) 472-2408 · infoT5@eest5mdp.edu.ar
           </p>
         </div>
 
-        <nav class="footer-nav" aria-label="Navegación del pie">
-          <a href="/">Inicio</a>
-          <a href="/escuela">La Escuela</a>
-          <a href="/#especialidades">Especialidades</a>
-          <a href="/#hitos">Hitos históricos</a>
-          <a href="/expotec">ExpoTec</a>
-          <a href="/contacto">Contacto</a>
-        </nav>
-
         <div class="footer-redes">
-          <p class="rot">Redes</p>
-          <ul>
-            <li><a href="#" aria-label="Instagram (enlace a confirmar)">Instagram <span class="ph-mini">a confirmar</span></a></li>
-            <li><a href="#" aria-label="Facebook (enlace a confirmar)">Facebook <span class="ph-mini">a confirmar</span></a></li>
-            <li><a href="#" aria-label="YouTube (enlace a confirmar)">YouTube <span class="ph-mini">a confirmar</span></a></li>
-          </ul>
+          <p class="rot">Redes y Contacto</p>
+          <div class="footer-social-icons">
+            <a href="https://wa.me/5492235928268" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="WhatsApp" title="WhatsApp">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+            </a>
+            <a href="https://www.instagram.com/tecnicacinco_mdq/" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Instagram" title="Instagram">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+              </svg>
+            </a>
+            <a href="https://www.facebook.com/EESTN5MDP" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Facebook" title="Facebook">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+              </svg>
+            </a>
+            <a href="mailto:infoT5@eest5mdp.edu.ar" class="footer-icon-btn" aria-label="Email" title="Correo Electrónico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </a>
+          </div>
         </div>
       </div>
 
       <div class="shell footer-bottom">
-        <p>Juan B. Justo 4287 · 0223-472-2408 · eest5gralpueyrredon@abc.gob.ar</p>
+        <p class="footer-dev">
+          Desarrollado por: <a href="https://portfolio-mauve-one-s4i0h3h691.vercel.app/" target="_blank" rel="noopener noreferrer">Malena Salvia ↗</a>
+        </p>
         <p class="claim">Aprender haciendo. Construir el futuro.<span class="acc" aria-hidden="true"></span></p>
       </div>
     </footer>
 
-    <script src="/js/script.js" defer></script>
+    <!-- MODAL POPUP PARA NOTICIAS / COMUNICADOS -->
+    <div id="newsModal" class="news-modal" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="news-modal-overlay" id="newsModalOverlay"></div>
+      <div class="news-modal-container">
+        <button type="button" class="news-modal-close" id="newsModalClose" aria-label="Cerrar modal">&times;</button>
+        <div class="news-modal-content" id="newsModalContent">
+          <!-- Se inyecta dinámicamente con JS -->
+        </div>
+      </div>
+    </div>
+
+    <script src="js/script.js" defer></script>
+    <script src="js/dynamic_content.js?v=3" defer></script>
   </body>
 </html>

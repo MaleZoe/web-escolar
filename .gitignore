@@ -1,0 +1,22 @@
+# Archivos comprimidos y respaldos pesados
+*.zip
+*.tar.gz
+*.rar
+zip.zip
+tec.zip
+
+# Dependencias Node.js
+node_modules/
+package-lock.json
+
+# Variables de entorno locales
+.env
+.env.local
+.env.*.local
+
+# Archivos del sistema operativo y editores
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

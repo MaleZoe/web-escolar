@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Marco Institucional | E.E.S.T. N.º 5 “Amancio Williams”</title>
+    <link rel="icon" type="image/png" href="../favicon.png" />
+    <link rel="stylesheet" href="../css/styles.css?v=3" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("eest5_theme");
+          if (t === "dark" || (!t && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+            document.documentElement.setAttribute("data-theme", "dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      .inst-nav-tabs {
+        display: flex;
+        gap: 12px;
+        border-bottom: 2px solid var(--linea);
+        margin: 40px 0 32px 0;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+      .inst-tab-btn {
+        background: none;
+        border: none;
+        font-family: var(--display);
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--texto-suave);
+        padding: 12px 22px;
+        cursor: pointer;
+        border-radius: 8px 8px 0 0;
+        position: relative;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .inst-tab-btn:hover {
+        color: var(--verde);
+        background: var(--crema-suave);
+      }
+      .inst-tab-btn.active {
+        color: var(--verde);
+        border-bottom: 3px solid var(--verde);
+        background: var(--crema-suave);
+      }
+      [data-theme="dark"] .inst-tab-btn.active {
+        color: #8be040;
+        border-bottom-color: #8be040;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .inst-content-pane {
+        display: none;
+      }
+      .inst-content-pane.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+      .inst-card {
+        background: var(--blanco);
+        border: 1px solid var(--linea);
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 28px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      }
+      [data-theme="dark"] .inst-card {
+        background: var(--carbon);
+        border-color: var(--linea-oscura);
+      }
+      .inst-card h2 {
+        font-family: var(--display);
+        font-size: 1.6rem;
+        color: var(--tinta);
+        margin-top: 0;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--linea);
+        padding-bottom: 10px;
+      }
+      [data-theme="dark"] .inst-card h2 {
+        color: #f3f4f6;
+        border-color: var(--linea-oscura);
+      }
+      .inst-card h3 {
+        font-family: var(--display);
+        font-size: 1.25rem;
+        color: var(--verde);
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+      [data-theme="dark"] .inst-card h3 {
+        color: #8be040;
+      }
+      .inst-card p {
+        line-height: 1.7;
+        margin-bottom: 1rem;
+        color: var(--texto);
+        text-align: justify;
+      }
+      [data-theme="dark"] .inst-card p {
+        color: #d1d5db;
+      }
+      .inst-list {
+        margin: 12px 0 20px 24px;
+        line-height: 1.7;
+      }
+      .inst-list li {
+        margin-bottom: 8px;
+        color: var(--texto);
+      }
+      [data-theme="dark"] .inst-list li {
+        color: #d1d5db;
+      }
+      .inst-video-container {
+        max-width: 800px;
+        margin: 24px auto;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #000;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      }
+      .inst-video-container video {
+        width: 100%;
+        display: block;
+        max-height: 480px;
+      }
+      .inst-mobile-select-wrap {
+        display: none;
+      }
+      @media (max-width: 768px) {
+        .inst-nav-tabs {
+          display: none !important;
+        }
+        .inst-mobile-select-wrap {
+          display: block;
+          margin: 24px 0 20px 0;
+        }
+        .inst-select-label {
+          display: block;
+          font-family: var(--display);
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--tinta);
+          margin-bottom: 8px;
+        }
+        [data-theme="dark"] .inst-select-label {
+          color: #f3f4f6;
+        }
+        .inst-select-custom {
+          position: relative;
+        }
+        .inst-mobile-select {
+          width: 100%;
+          font-family: var(--display);
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: var(--verde);
+          background: var(--crema-suave);
+          border: 2px solid var(--verde);
+          border-radius: 10px;
+          padding: 14px 44px 14px 16px;
+          appearance: none;
+          -webkit-appearance: none;
+          cursor: pointer;
+          box-shadow: 0 4px 14px rgba(52, 100, 1, 0.08);
+          outline: none;
+        }
+        [data-theme="dark"] .inst-mobile-select {
+          background: rgba(255, 255, 255, 0.06);
+          color: #8be040;
+          border-color: #8be040;
+        }
+        .inst-select-custom::after {
+          content: "";
+          position: absolute;
+          right: 18px;
+          top: 50%;
+          width: 9px;
+          height: 9px;
+          border-right: 2.5px solid var(--verde);
+          border-bottom: 2.5px solid var(--verde);
+          transform: translateY(-65%) rotate(45deg);
+          pointer-events: none;
+        }
+        [data-theme="dark"] .inst-select-custom::after {
+          border-color: #8be040;
+        }
+      }
+
+            @media (max-width: 640px) {
+        .inst-nav-tabs {
+          margin: 20px 0 18px 0;
+          gap: 6px;
+        }
+        .inst-tab-btn {
+          font-size: 0.92rem;
+          padding: 10px 14px;
+        }
+        .inst-card {
+          padding: 22px 16px;
+          border-radius: 12px;
+        }
+        .inst-card h2 {
+          font-size: 1.35rem;
+        }
+        .inst-card h3 {
+          font-size: 1.15rem;
+        }
+        .inst-card p {
+          text-align: left;
+        }
+        .inst-list {
+          margin-left: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+    <header class="site-header is-solid" id="header">
+      <div class="shell header-inner">
+        <a class="brand" href="../index.html" aria-label="Inicio — E.E.S.T. N.º 5 Amancio Williams">
+          <img src="../img/logo.png" alt="Escudo institucional de la E.E.S.T. N.º 5 Amancio Williams" width="48" height="48" />
+          <span class="brand-text">
+            <strong>E.E.S.T. N.º 5</strong>
+            <em>“Amancio Williams” · Mar del Plata</em>
+          </span>
+        </a>
+        <nav class="nav" id="nav" aria-label="Navegación principal">
+          <a href="escuela.html">La Escuela</a>
+          <a href="../index.html#anuncios">Anuncios</a>
+          <a href="../index.html#especialidades">Especialidades</a>
+          <a href="../index.html#hitos">Hitos históricos</a>
+          <a href="expotec.html">ExpoTec</a>
+          <a href="institucionales.html" class="active">Institucionales</a>
+          <a class="nav-cta" href="contacto.html">Contacto</a>
+        </nav>
+        <div class="header-right">
+          <button class="theme-toggle" id="themeToggle" type="button" aria-label="Cambiar tema claro u oscuro" title="Cambiar tema">
+            <svg class="theme-icon theme-icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            <svg class="theme-icon theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+          <button class="burger" id="burger" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+      <div class="header-rule" aria-hidden="true"></div>
+    </header>
+
+    <main id="contenido">
+      <section class="page-hero">
+        <div class="shell">
+          <p class="section-tag light">Marco Institucional</p>
+          <h1 class="page-title">Normativas Oficiales y Acuerdos de Convivencia</h1>
+          <p class="hero-sub" style="max-width: 800px; margin-top: 10px; color: rgba(255,255,255,0.85);">
+            Reglamentaciones vigentes, pautas de convivencia escolar y marco legal que rigen la actividad académica y técnica de la E.E.S.T. N.º 5 “Amancio Williams”.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" style="padding-top: 10px;">
+        <div class="shell">
+          <!-- PESTAÑAS SELECTORAS -->
+          <div class="inst-nav-tabs" role="tablist">
+            <button type="button" class="inst-tab-btn active" id="tabBtnAIC" role="tab" aria-selected="true" aria-controls="paneAIC" onclick="switchInstTab('acuerdo-institucional')">
+              Acuerdo Institucional de Convivencia (AIC)
+            </button>
+            <button type="button" class="inst-tab-btn" id="tabBtnRA" role="tab" aria-selected="false" aria-controls="paneRA" onclick="switchInstTab('regimen-academico')">
+              Régimen Académico (Res. 1650/24)
+            </button>
+          </div>
+
+          
+          <!-- SELECTOR RESPONSIVE PARA MÓVILES -->
+          <div class="inst-mobile-select-wrap">
+            <label for="instMobileSelect" class="inst-select-label">Sección a visualizar:</label>
+            <div class="inst-select-custom">
+              <select id="instMobileSelect" class="inst-mobile-select" onchange="switchInstTab(this.value)">
+                <option value="acuerdo-institucional" id="optAIC">Acuerdo Institucional de Convivencia (AIC)</option>
+                <option value="regimen-academico" id="optRA">Régimen Académico (Res. 1650/24)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ================= PANE 1: ACUERDO INSTITUCIONAL DE CONVIVENCIA ================= -->
+          <div class="inst-content-pane active" id="paneAIC" role="tabpanel" aria-labelledby="tabBtnAIC">
+            <!-- Presentación -->
+            <article class="inst-card">
+              <h2>Presentación</h2>
+              <p>
+                La educación técnico profesional introduce a los estudiantes, jóvenes y adultos, en un recorrido de profesionalización a partir del acceso a una base de conocimientos y de habilidades profesionales que les permita su inserción en áreas ocupacionales cuya complejidad exige haber adquirido una formación general, una cultura científica tecnológica profesional, así como continuar aprendiendo durante toda su vida.
+              </p>
+              <p><strong>A las familias, docentes y estudiantes del Establecimiento:</strong></p>
+              <p>
+                La redacción de este AIC sostiene en primer lugar la finalidad educativa, como referente principal de las normas internas de esta institución. Es objetivo de la misma educar para el crecimiento personal y la participación responsable de los estudiantes, favoreciendo el ejercicio de la libertad, el compromiso, el diálogo y la valoración de las diferencias. La <strong>Resolución 1709/09</strong> de la Provincia de Buenos Aires proporciona un nuevo intento para la transformación educativa: valorar a la escuela como unidad que reflexiona sobre sus problemas y que tiene la facultad de diseñar estrategias de resolución. Mediante el trabajo en equipo que prioriza las cuestiones pedagógicas, la Institución genera mecanismos que mejoren los aprendizajes de todos los estudiantes y un clima de convivencia democrática, <strong>promoviendo que todos son sujetos de respeto.</strong>
+              </p>
+              <p>
+                El proceso de elaboración y puesta en marcha del AIC requiere de una cultura de colaboración entre quienes participan como integrantes de la comunidad educativa. En este sentido, el trabajo en equipo adquiere un valor fundamental como herramienta de intercambio entre personas: adolescentes, jóvenes y adultos que buscan arribar a acuerdos.
+              </p>
+              <h3>Principios fundacionales del AIC</h3>
+              <ul class="inst-list">
+                <li><strong>Cooperativismo y solidaridad:</strong> Es necesario aprender a trabajar juntos, sumando esfuerzos y compartir con los demás, ejerciendo la confianza y la ayuda mutua.</li>
+                <li><strong>Comunicación:</strong> Los miembros de la comunidad, jóvenes y adultos, deben aprender a observar cuidadosamente, a comunicarse con precisión y a escuchar sensiblemente.</li>
+                <li><strong>Aprecio por la diversidad:</strong> Aprender a respetar y apreciar las diferencias entre personas.</li>
+                <li><strong>Expresión positiva de las emociones:</strong> Aprender a expresar los sentimientos a partir del autocontrol, encauzando la ira, el enfado y la frustración hacia formas no agresivas ni destructivas.</li>
+                <li><strong>Resolución de situaciones conflictivas:</strong> Aprender a responder creativamente a las cuestiones planteadas en el contexto de una comunidad solidaria y de apoyo.</li>
+              </ul>
+            </article>
+
+            <!-- Marco Legal -->
+            <article class="inst-card">
+              <h2>Marco Legal</h2>
+              <p>El presente Acuerdo de Convivencia tiene como propósito orientar la labor de la Comunidad Educativa, determinando pautas claras de acción enmarcadas en la legislación vigente:</p>
+              <ul class="inst-list">
+                <li><strong>Ley Nacional de Educación 26.206:</strong> Regula el ejercicio del derecho de enseñar y aprender consagrado por el Art. 14 de la Constitución Nacional. Propone una educación comprometida con la participación democrática, la libertad y la resolución pacífica de conflictos.</li>
+                <li><strong>Ley Provincial de Educación 13.688:</strong> Promueve la participación democrática de docentes, familias, estudiantes y comunidad educativa en general.</li>
+                <li><strong>Ley de Educación Técnico Profesional 26.058:</strong> Regula y ordena la Educación Técnico Profesional en el Nivel Medio y Superior no Universitario, fomentando capacidades, conocimientos y habilidades profesionales.</li>
+                <li><strong>Decreto Reglamentario de la Ley 19.587 (Medicina, Higiene y Seguridad en el Trabajo - Arts. 191, 192 y 193):</strong> Normativa indispensable para el resguardo de la integridad física en talleres y laboratorios.</li>
+                <li><strong>Ley Nacional 26.061 y Ley Provincial 13.298:</strong> Protección Integral de los Derechos de las niñas, niños y adolescentes y promoción de los derechos de la juventud.</li>
+                <li><strong>Ley Nacional 26.586 y Res. CFE 256/15:</strong> Programa Nacional de Educación y Prevención sobre las Adicciones y el Consumo Indebido de Drogas.</li>
+                <li><strong>Ley Nacional 27.272/16:</strong> Prohíbe la venta y expendio de “bebidas energizantes” a menores de 18 años en todo el territorio nacional.</li>
+                <li><strong>Ley Nacional 27.642/21:</strong> Promoción de la Alimentación Saludable.</li>
+                <li><strong>Ley Nacional 27.590/20:</strong> Prevención del ciberacoso y grooming.</li>
+                <li><strong>Ley Nacional 26.150/06, Ley Provincial 14.744/15 y Res. CFE 419/22:</strong> Educación Sexual Integral (ESI) como derecho irrenunciable de los estudiantes.</li>
+              </ul>
+            </article>
+
+            <!-- Capítulo I: Introducción -->
+            <article class="inst-card">
+              <h2>Capítulo I: Introducción</h2>
+              <p><strong>Art. 1°:</strong> Los miembros de la comunidad educativa deberán respetar y procurar hacer respetar las normas de convivencia establecidas en el presente AIC. Será parte integrante del Proyecto Institucional y de aplicación en el ámbito escolar.</p>
+              <p><strong>Art. 2°:</strong> Es obligación concurrir al establecimiento en condiciones de higiene y con la vestimenta adecuada para la formación técnico profesional.</p>
+              <p><strong>Art. 3°:</strong> Para asistir a clases los estudiantes deberán cumplir con lo establecido en el Capítulo II sobre deberes de los estudiantes.</p>
+              <p><strong>Art. 4°:</strong> La Institución podrá fotografiar en conjunto, publicar en su web o participar en concursos con producciones de los estudiantes. Si los padres/tutores no están de acuerdo, deberán dejar constancia firmada.</p>
+              <p><strong>Art. 5°:</strong> La Institución podrá brindar charlas, invitados especiales o disertaciones sobre temáticas preventivas, de salud y ESI. Quienes no estén de acuerdo deberán dejar expresa constancia firmada.</p>
+              <p><strong>Art. 6°:</strong> Los estudiantes se retirarán al finalizar el horario escolar, el horario de Educación Física y de Taller, solos y por sus propios medios. Las clases y el taller se consideran turnos distintos.</p>
+              <p><strong>Art. 7°:</strong> Al finalizar actividades especiales (Feria de Ciencias u otras), los estudiantes se podrán retirar finalizando la jornada con pre-aviso por nota a los padres/tutores.</p>
+              <p><strong>Art. 8°:</strong> Los estudiantes mayores de 18 años pueden firmar su propio retiro anticipado en ausencia del profesor, siempre que no haya continuidad pedagógica garantizada.</p>
+            </article>
+
+            <!-- Capítulo II: De los Estudiantes -->
+            <article class="inst-card">
+              <h2>Capítulo II: De los Estudiantes</h2>
+              <h3>Art. 1°: Derechos de los Estudiantes</h3>
+              <ul class="inst-list">
+                <li>a) Ser respetados y cuidados sin discriminación.</li>
+                <li>b) Ser escuchados en sus planteos e inquietudes.</li>
+                <li>c) Participar libremente de la vida escolar.</li>
+                <li>d) Recibir orientación y contención de los miembros adultos del Establecimiento.</li>
+                <li>e) Ser ayudados a lograr una firme conciencia democrática.</li>
+                <li>f) Desenvolverse en un ámbito de calidad y equidad educativa.</li>
+                <li>g) Peticionar ante los docentes de forma respetuosa.</li>
+                <li>h) Utilizar las instalaciones edilicias sin afectar el normal desenvolvimiento.</li>
+              </ul>
+
+              <h3>Art. 2°: Deberes de los Estudiantes</h3>
+              <ul class="inst-list">
+                <li>a) Cumplir con el Acuerdo Institucional de Convivencia.</li>
+                <li>b) Respetar a todo el personal del Establecimiento y a sus pares.</li>
+                <li>c) Aceptar la diversidad y no discriminar bajo ningún concepto.</li>
+                <li>d) Respetar la prohibición absoluta de consumir bebidas alcohólicas o energéticas, o fumar en el interior o en la vereda de la Escuela.</li>
+                <li>e) Asumir una actitud de compromiso, responsabilidad y esfuerzo como estudiante técnico.</li>
+                <li>f) Asistir, atender y participar activamente en las clases.</li>
+                <li>g) Comportarse correctamente, no interrumpiendo el desarrollo pedagógico.</li>
+                <li>h) Completar las tareas asignadas para el hogar como parte del compromiso diario.</li>
+                <li>i) Mantener en estado prolijo de higiene y orden todos sus útiles, carpetas y herramientas.</li>
+                <li>j) Cuidar, conservar y procurar el buen mantenimiento del edificio, mobiliario y materiales didácticos. Prohibido escribir o rayar paredes, mesas o sillas.</li>
+                <li>k) Reparar el daño ocasionado.</li>
+                <li>l) Presentar diariamente el Cuaderno de Comunicaciones con la firma de los adultos responsables.</li>
+                <li>m) <strong>Vestimenta:</strong> Asistir vistiendo guardapolvo y mantenerlo puesto durante toda su permanencia en la escuela. No se autoriza el uso de pantalones cortos, bermudas, pantalones rotos, gorras, musculosas, aros en el rostro ni expansores en las orejas. En caso de cabello largo, deberá estar atado y recogido por seguridad en talleres.</li>
+                <li>n) <strong>Dispositivos móviles:</strong> No utilizar el celular en ningún ámbito de la Institución sin autorización docente (Res. DGCyE 1728/06). Desautorizado expresamente sacar fotos o filmar a adultos o compañeros.</li>
+              </ul>
+
+              <h3>Clases Prácticas de Taller y Seguridad</h3>
+              <p>
+                Es obligatorio el uso de mameluco y/o guardapolvo (largo de media pierna) o camisa y pantalón de trabajo para todos los talleres, a los efectos de resguardar la seguridad y prevenir accidentes (Decreto Reglamentario Ley 19.587, Arts. 191 a 193). En caso de no cumplir con la vestimenta de seguridad, el estudiante no podrá efectuar tareas prácticas, registrándose ausente con permanencia.
+              </p>
+
+              <h3>Art. 3°: Acciones Sancionables</h3>
+              <p>
+                Constituyen faltas sancionables: no cumplir con el AIC, faltar el respeto a cualquier integrante de la comunidad, promover desórdenes, desobedecer consignas, retirarse sin autorización, destruir o ensuciar instalaciones, agredir de forma verbal o física, utilizar sobrenombres descalificantes, adulterar documentación y concurrir bajo el efecto de sustancias prohibidas.
+              </p>
+            </article>
+
+            <!-- Capítulo III: De los Padres y Tutores -->
+            <article class="inst-card">
+              <h2>Capítulo III: De los Padres, Madres y Tutores</h2>
+              <h3>Derechos</h3>
+              <ul class="inst-list">
+                <li>Ser respetados y escuchados sin discriminación.</li>
+                <li>Recibir información periódica acerca de la evolución pedagógica de sus hijos.</li>
+                <li>Concertar entrevistas con docentes y directivos en días y horarios prefijados.</li>
+                <li>Retirar a sus hijos durante el horario escolar bajo firma de responsabilidad.</li>
+              </ul>
+
+              <h3>Deberes</h3>
+              <ul class="inst-list">
+                <li>Cumplir y hacer cumplir el AIC, cooperando con la tarea formadora de la escuela.</li>
+                <li>Acreditar condición de tutela legalmente constituida.</li>
+                <li>Leer y firmar diariamente el Cuaderno de Comunicaciones institucional.</li>
+                <li>Firmar la notificación de ausencias y sanciones personalmente en el establecimiento.</li>
+                <li>Justificar inasistencias en tiempo y forma con los certificados correspondientes.</li>
+                <li>Presentar certificados de aptitud física para Educación Física y fichas de salud al inicio del ciclo lectivo.</li>
+                <li>Comunicar de inmediato cambios de domicilio, teléfono o situación legal de guarda.</li>
+              </ul>
+            </article>
+
+            <!-- Capítulo IV: Del Personal Docente y No Docente -->
+            <article class="inst-card">
+              <h2>Capítulo IV: Del Personal Docente y No Docente</h2>
+              <p><strong>Derechos:</strong> Ser respetados, participar en proyectos pedagógicos e innovadores, acceder a la actualización bibliográfica y al marco legal estatutario.</p>
+              <p><strong>Deberes:</strong> Desempeñar la labor con compromiso y dedicación, dar buen ejemplo, brindar escucha y comprensión, fomentar la solidaridad, no discriminar, entregar calificaciones en término, comunicar dificultades en el Cuaderno de Comunicaciones y participar de las reuniones de personal y del CIC.</p>
+              <p><strong>Acciones Inadecuadas:</strong> Incumplir el Estatuto del Docente, solicitar sanciones colectivas injustificadas, manifestar desinterés ante inquietudes estudiantiles, censurar la libertad de expresión o cometer actos discriminatorios.</p>
+            </article>
+
+            <!-- Sección 2: Reparaciones Pedagógicas y Sanciones -->
+            <article class="inst-card">
+              <h2>Sección 2: Reparaciones Pedagógicas y Sanciones (Capítulo V)</h2>
+              <p>
+                Las medidas disciplinarias tienen un fin pedagógico y reparador, valorando la gravedad del hecho, las consecuencias reales y la intencionalidad o reiteración:
+              </p>
+              <ul class="inst-list">
+                <li><strong>Faltas Leves:</strong> Llamados de atención, apercibimiento asentado en el Cuaderno de Comunicaciones y en la ficha individual. Posibilidad de tareas comunitarias reflexivas.</li>
+                <li><strong>Faltas Graves:</strong> Acciones que ponen en riesgo la integridad psicofísica o el patrimonio escolar. Citación a padres, suspensión o reparación de daños materiales. La reiteración de faltas leves se convierte en grave.</li>
+                <li><strong>Faltas Muy Graves:</strong> Ponen en peligro la integridad propia y ajena. Intervención del Equipo Directivo, CIC y derivación según corresponda.</li>
+              </ul>
+
+              <h3>Faltas Graves Específicas (Anexo al Capítulo V)</h3>
+              <ul class="inst-list">
+                <li>Ingerir bebidas estimulantes/energizantes en el interior del establecimiento.</li>
+                <li>Ausentarse o retirarse de la escuela sin la debida autorización.</li>
+                <li>Agresión a compañeros (verbal, física, por razones de género o ciberbullying en redes sociales).</li>
+                <li>Falta de respeto o agresión al personal escolar (en persona, por teléfono o por medios digitales).</li>
+                <li>Sustracción de pertenencias o amenazas a miembros de la comunidad educativa.</li>
+                <li>Difundir en redes sociales o dispositivos fotos o videos filmados dentro de la escuela sin consentimiento.</li>
+                <li>Arrojar pirotecnia o explosivos en cualquier espacio escolar.</li>
+                <li>Deteriorar o destruir mobiliario, maquinaria o edificio (conlleva la reposición del material).</li>
+                <li>Adulterar calificaciones o comunicar falsas alarmas.</li>
+              </ul>
+              <p><em>Toda persona sobre la que recaiga una sanción tiene derecho a ser escuchada previamente y efectuar su descargo oral o por escrito.</em></p>
+            </article>
+
+            <!-- Sección 3: Consejo Institucional de Convivencia (CIC) -->
+            <article class="inst-card">
+              <h2>Sección 3: Consejo Institucional de Convivencia (CIC) - Capítulo VI</h2>
+              <p>
+                El <strong>CIC</strong> es el organismo democrático y consultivo de la escuela. Está integrado por:
+              </p>
+              <ul class="inst-list">
+                <li>1 Representante del Equipo de Conducción (Directivo).</li>
+                <li>1 Preceptor/a.</li>
+                <li>2 Docentes elegidos democráticamente entre sus pares.</li>
+                <li>2 Estudiantes representantes del Centro de Estudiantes.</li>
+                <li>(Todos los estamentos cuentan con suplentes designados).</li>
+              </ul>
+              <p>
+                <strong>Funciones:</strong> Evaluar las situaciones de conflicto escuchando a las partes, mediar e instrumentar mecanismos de resolución, asesorar al Equipo Directivo en la aplicación de sanciones y proponer ajustes al AIC. Su función es ad-honorem.
+              </p>
+            </article>
+
+            <!-- Apartados Complementarios -->
+            <article class="inst-card">
+              <h2>Apartados Complementarios y Reacomodamiento de Matrícula</h2>
+              <h3>Sobre Reacomodamiento de Matrícula</h3>
+              <p>
+                Los estudiantes que promocionen conservarán su turno de inscripción, a excepción de situaciones de equiparación de cursos, donde el Equipo Directivo organizará los grupos de acuerdo a los siguientes criterios:
+              </p>
+              <ul class="inst-list">
+                <li>1. Estudiantes que promocionen en Mesa de Examen / Intensificación de 3ra Materia.</li>
+                <li>2. Estudiantes que promocionen en Período Febrero - Marzo.</li>
+                <li>3. Estudiantes que promocionen en Período Diciembre.</li>
+                <li>4. De ser necesario, se recurrirá extraordinariamente a sorteo entre quienes promovieron al finalizar el ciclo.</li>
+              </ul>
+              <h3>Capítulo VII: Evaluación y Ajustes del AIC</h3>
+              <p>
+                El presente AIC se analiza al inicio de cada ciclo lectivo con los estudiantes en el espacio de <em>Construcción de Ciudadanía</em> (Ciclo Básico) y docentes a elección en el Ciclo Superior, permaneciendo sujeto a revisiones y mejoras consensuadas con la comunidad.
+              </p>
+            </article>
+          </div>
+
+          <!-- ================= PANE 2: RÉGIMEN ACADÉMICO ================= -->
+          <div class="inst-content-pane" id="paneRA" role="tabpanel" aria-labelledby="tabBtnRA">
+            <article class="inst-card">
+              <h2>Nuevo Régimen Académico — Resolución N.º 1650/24 DGCyE</h2>
+              <p style="font-weight: 600; color: var(--verde);">Actualización institucional: 5/12/24</p>
+              <p>
+                Dejamos a disposición la información sobre el nuevo régimen académico y los videos explicativos elaborados por estudiantes y docentes que ayudan a comprender los cambios vigentes en la educación secundaria técnica:
+              </p>
+
+              <!-- Video Explicativo -->
+              <div class="inst-video-container">
+                <video controls playsinline preload="metadata">
+                  <source src="https://eest5mdp.edu.ar/assets/regimen%20acad%C3%A9mico%20por%20estudiantes%203-CCaRwghv.mp4" type="video/mp4" />
+                  Tu navegador no soporta la reproducción de video HTML5.
+                </video>
+              </div>
+
+              <h3>1. Organización Temporal y Calificación Cuatrimestral</h3>
+              <p>
+                El ciclo lectivo se organiza en <strong>dos cuatrimestres</strong>. A mitad de cada cuatrimestre se emite un informe de valoración conceptual preliminar mediante el <strong>RITE</strong> (Registro Institucional de Trayectorias Educativas):
+              </p>
+              <ul class="inst-list">
+                <li><strong>TEA (Trayectoria Educativa Avanzada):</strong> Aprendizajes prioritarios alcanzados satisfactoriamente.</li>
+                <li><strong>TEP (Trayectoria Educativa en Proceso):</strong> Aprendizajes en vías de consolidación que requieren seguimiento docente.</li>
+                <li><strong>TED (Trayectoria Educativa Discontinua):</strong> Dificultades manifiestas que exigen intensificación prioritaria.</li>
+              </ul>
+              <p>
+                Al concluir cada cuatrimestre, la calificación es <strong>numérica del 1 al 10</strong>, requiriéndose alcanzar una nota mínima de 7 puntos en cada espacio curricular para la acreditación.
+              </p>
+
+              <h3>2. Acreditación por Espacio Curricular (Materias)</h3>
+              <p>
+                Se consolida el principio de <strong>aprobación por materia</strong>: el estudiante aprueba los saberes que efectivamente consolidó, evitando recursar materias ya acreditadas. Aquellas materias pendientes ingresan a períodos programados de intensificación pedagógica.
+              </p>
+
+              <h3>3. Períodos de Intensificación de la Enseñanza</h3>
+              <p>
+                Para los estudiantes que deban afianzar saberes pendientes, se habilitan instancias específicas de acompañamiento:
+              </p>
+              <ul class="inst-list">
+                <li><strong>Período Diciembre:</strong> Intensificación al cierre del ciclo lectivo con el profesor titular.</li>
+                <li><strong>Período Febrero / Marzo:</strong> Instancia previa al inicio formal de clases para acreditar materias pendientes.</li>
+                <li><strong>Período Julio / Agosto:</strong> Instancia intermedia de intensificación durante el receso y primer cuatrimestre.</li>
+              </ul>
+
+              <h3>4. Marco Específico para la Escuela Técnica (Anexo 8 ETP)</h3>
+              <p>
+                Las escuelas secundarias técnicas presentan una carga horaria superior debido a sus entornos formativos:
+              </p>
+              <ul class="inst-list">
+                <li><strong>Formación Científico-Tecnológica y General:</strong> Se evalúan contenidos conceptuales y aplicados conforme al régimen provincial.</li>
+                <li><strong>Formación Técnico-Específica (Talleres y Laboratorios):</strong> La aprobación se sustenta en el desarrollo de capacidades profesionales, normas de seguridad industrial, destrezas de oficio y proyectos integradores prácticos irrenunciables.</li>
+                <li><strong>Prácticas Profesionalizantes:</strong> En el último año de cursada (7.º año), son de cumplimiento obligatorio para la obtención del título de Técnico en Construcciones, Informática o Electrónica.</li>
+              </ul>
+
+              <h3>5. Equipo de Definición de Trayectorias Educativas (EDTE)</h3>
+              <p>
+                Se crea formalmente el <strong>EDTE</strong>, integrado por directivos, jefes de área, preceptores y profesores, para diseñar trayectorias personalizadas y realizar el seguimiento cercano de los estudiantes que presenten dificultades académicas o inasistencias prolongadas.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="shell footer-top">
+        <div class="footer-brand">
+          <div class="footer-brand-header">
+            <img src="../img/logo.png" alt="Escudo institucional de la escuela" width="64" height="64" loading="lazy" />
+            <p class="footer-name">
+              <strong>E.E.S.T. N.º 5 “Amancio Williams”</strong><br />
+              Escuela de Educación Secundaria Técnica · Mar del Plata
+            </p>
+          </div>
+          <p class="footer-info">
+            Juan B. Justo 4287 · (0223) 472-2408 · infoT5@eest5mdp.edu.ar
+          </p>
+        </div>
+
+        <div class="footer-redes">
+          <p class="rot">Redes y Contacto</p>
+          <div class="footer-social-icons">
+            <a href="https://wa.me/5492235928268" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="WhatsApp" title="WhatsApp">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            </a>
+            <a href="https://www.instagram.com/tecnicacinco_mdq/" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Instagram" title="Instagram">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            </a>
+            <a href="https://www.facebook.com/EESTN5MDP" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Facebook" title="Facebook">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+            </a>
+            <a href="mailto:infoT5@eest5mdp.edu.ar" class="footer-icon-btn" aria-label="Email" title="Correo Electrónico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="shell footer-bottom">
+        <p class="footer-dev">
+          Desarrollado por: <a href="https://portfolio-mauve-one-s4i0h3h691.vercel.app/" target="_blank" rel="noopener noreferrer">Malena Salvia ↗</a>
+        </p>
+        <p class="claim">Aprender haciendo. Construir el futuro.<span class="acc" aria-hidden="true"></span></p>
+      </div>
+    </footer>
+
+    <script src="../js/script.js" defer></script>
+    <script src="../js/dynamic_content.js?v=3" defer></script>
+    <script>
+      function switchInstTab(seccion) {
+        var selectEl = document.getElementById("instMobileSelect");
+        if (selectEl) selectEl.value = (seccion === "regimen-academico") ? "regimen-academico" : "acuerdo-institucional";
+        var isRA = seccion === "regimen-academico";
+        var btnAIC = document.getElementById("tabBtnAIC");
+        var btnRA = document.getElementById("tabBtnRA");
+        var paneAIC = document.getElementById("paneAIC");
+        var paneRA = document.getElementById("paneRA");
+
+        if (isRA) {
+          btnRA.classList.add("active");
+          btnRA.setAttribute("aria-selected", "true");
+          btnAIC.classList.remove("active");
+          btnAIC.setAttribute("aria-selected", "false");
+          paneRA.classList.add("active");
+          paneAIC.classList.remove("active");
+        } else {
+          btnAIC.classList.add("active");
+          btnAIC.setAttribute("aria-selected", "true");
+          btnRA.classList.remove("active");
+          btnRA.setAttribute("aria-selected", "false");
+          paneAIC.classList.add("active");
+          paneRA.classList.remove("active");
+        }
+
+        // Actualizar URL sin recargar
+        if (window.history && window.history.replaceState) {
+          var newUrl = window.location.pathname + "?seccion=" + seccion;
+          window.history.replaceState(null, "", newUrl);
+        }
+      }
+
+      // Detectar parámetro en URL (?seccion=... o #... o #/institucionales?seccion=...)
+      window.addEventListener("DOMContentLoaded", function () {
+        var query = window.location.search || "";
+        var hash = window.location.hash || "";
+        var combined = (query + " " + hash).toLowerCase();
+
+        if (combined.includes("regimen-academico") || combined.includes("regimen_academico")) {
+          switchInstTab("regimen-academico");
+        } else {
+          switchInstTab("acuerdo-institucional");
+        }
+      });
+    </script>
+  </body>
+</html>

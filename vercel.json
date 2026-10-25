@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "framework": null,
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "functions": {
+    "api/**/*.php": {
+      "runtime": "vercel-php@0.7.3"
+    },
+    "sys-control-98/**/*.php": {
+      "runtime": "vercel-php@0.7.3"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/sys-control-98/(.*)",
+      "dest": "/sys-control-98/$1"
+    },
+    {
+      "handle": "filesystem"
+    }
+  ]
+}
