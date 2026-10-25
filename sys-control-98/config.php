@@ -33,6 +33,18 @@ function getDB() {
             ];
             // Soporte SSL automático para TiDB Cloud / Aiven / Nube
             if (DB_HOST !== 'localhost' && DB_HOST !== '127.0.0.1') {
+                $caPaths = [
+                    '/etc/ssl/certs/ca-certificates.crt',
+                    '/etc/pki/tls/certs/ca-bundle.crt',
+                    '/etc/ssl/ca-bundle.pem',
+                    'C:\\xampp\\apache\\bin\\curl-ca-bundle.crt'
+                ];
+                foreach ($caPaths as $ca) {
+                    if (file_exists($ca)) {
+                        $options[PDO::MYSQL_ATTR_SSL_CA] = $ca;
+                        break;
+                    }
+                }
                 if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
                     $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
                 }
