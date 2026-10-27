@@ -698,10 +698,11 @@ html:not([data-theme="dark"]) .theme-icon-moon {
 .esp-body h3 {
   font-family: var(--display);
   font-weight: 600;
-  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  font-size: clamp(1.3rem, 2.2vw, 1.85rem);
   letter-spacing: -0.03em;
   color: var(--blanco);
   margin: 0 0 6px;
+  line-height: 1.22;
 }
 .esp-titulo {
   margin: 0 0 12px;

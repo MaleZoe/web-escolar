@@ -81,13 +81,10 @@
       }
 
       // WhatsApp links
-      if (c.contacto_whatsapp) {
-        var cleanWa = c.contacto_whatsapp.replace(/[^0-9]/g, "");
-        var waLinks = document.querySelectorAll("a[href*='wa.me']");
-        waLinks.forEach(function (a) {
-          a.href = "https://wa.me/" + cleanWa;
-        });
-      }
+      var waLinks = document.querySelectorAll("a[href*='wa.me']");
+      waLinks.forEach(function (a) {
+        a.remove();
+      });
 
       // ================= 2. PÁGINA "LA ESCUELA" =================
       if (c.sobre_nosotros) {
@@ -307,13 +304,13 @@
             data.especialidades.forEach(function (esp, idx) {
               if (idx < espCards.length) {
                 var card = espCards[idx];
-                if (esp.nombre) {
-                  var h3 = card.querySelector(".esp-body h3");
-                  if (h3) h3.textContent = sanitizeEncoding(esp.nombre);
-                }
                 if (esp.titulo) {
+                  var h3 = card.querySelector(".esp-body h3");
+                  if (h3) h3.textContent = sanitizeEncoding(esp.titulo);
+                }
+                if (esp.nombre) {
                   var tit = card.querySelector(".esp-titulo");
-                  if (tit) tit.textContent = sanitizeEncoding(esp.titulo);
+                  if (tit) tit.textContent = sanitizeEncoding(esp.nombre);
                 }
                 if (esp.descripcion) {
                   var desc = card.querySelector(".esp-desc");
