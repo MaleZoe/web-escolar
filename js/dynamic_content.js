@@ -16,6 +16,22 @@
       var c = data.contenido || {};
       var imgPrefix = isSubdir ? "../img/" : "img/";
 
+      function sanitizeEncoding(str) {
+        if (!str || typeof str !== "string") return str;
+        return str
+          .replace(/Dise\?o/g, "Diseño")
+          .replace(/planificaci\?n/g, "planificación")
+          .replace(/representaci\?n/g, "representación")
+          .replace(/ejecuci\?n/g, "ejecución")
+          .replace(/construcci\?n/g, "construcción")
+          .replace(/t\?cnico/gi, function(m) { return m[0] === 'T' ? "Técnico" : "técnico"; })
+          .replace(/c\?mputo/gi, function(m) { return m[0] === 'C' ? "Cómputo" : "cómputo"; })
+          .replace(/direcci\?n/gi, function(m) { return m[0] === 'D' ? "Dirección" : "dirección"; })
+          .replace(/electr\?nic/gi, function(m) { return m[0] === 'E' ? "Electrónic" : "electrónic"; })
+          .replace(/inform\?tic/gi, function(m) { return m[0] === 'I' ? "Informátic" : "informátic"; })
+          .replace(/a\?o/gi, function(m) { return m[0] === 'A' ? "Año" : "año"; });
+      }
+
       function resolveImg(val) {
         if (!val) return "";
         if (val.startsWith("data:") || val.startsWith("http://") || val.startsWith("https://") || val.startsWith("/") || val.startsWith("../")) {
@@ -59,10 +75,9 @@
       // Footer general info
       var fInfo = document.querySelector(".footer-info");
       if (fInfo) {
-        var dir = c.direccion || "Av. Juan B. Justo 4287, Mar del Plata";
-        var tel = c.contacto_telefono || "(0223) 472-2408";
+        var dir = c.direccion || "Juan B. Justo 4287, Mar del Plata";
         var mail = c.contacto_email || "infoT5@eest5mdp.edu.ar";
-        fInfo.textContent = dir + " · " + tel + " · " + mail;
+        fInfo.textContent = dir + " · " + mail;
       }
 
       // WhatsApp links
@@ -294,15 +309,15 @@
                 var card = espCards[idx];
                 if (esp.nombre) {
                   var h3 = card.querySelector(".esp-body h3");
-                  if (h3) h3.textContent = esp.nombre;
+                  if (h3) h3.textContent = sanitizeEncoding(esp.nombre);
                 }
                 if (esp.titulo) {
                   var tit = card.querySelector(".esp-titulo");
-                  if (tit) tit.textContent = esp.titulo;
+                  if (tit) tit.textContent = sanitizeEncoding(esp.titulo);
                 }
                 if (esp.descripcion) {
                   var desc = card.querySelector(".esp-desc");
-                  if (desc) desc.textContent = esp.descripcion;
+                  if (desc) desc.textContent = sanitizeEncoding(esp.descripcion);
                 }
                 if (esp.imagen) {
                   var img = card.querySelector(".esp-foto img");
@@ -497,26 +512,22 @@
         var cList = document.querySelector(".contacto-list");
         if (cList) {
           var items = cList.querySelectorAll("li");
-          if (items.length >= 3) {
-            if (c.direccion) {
-              var pDir = items[0].querySelectorAll("p")[1];
-              if (pDir) pDir.textContent = c.direccion;
+          items.forEach(function (li) {
+            var rot = li.querySelector(".rot");
+            if (!rot) return;
+            var label = rot.textContent.trim().toLowerCase();
+            if (label.includes("direcci") && c.direccion) {
+              var pDir = li.querySelectorAll("p")[1];
+              if (pDir) pDir.innerHTML = c.direccion.replace(/\n/g, "<br>");
             }
-            if (c.contacto_telefono) {
-              var aTel = items[1].querySelector("a");
-              if (aTel) {
-                aTel.textContent = c.contacto_telefono;
-                aTel.href = "tel:" + c.contacto_telefono.replace(/[^0-9+]/g, "");
-              }
-            }
-            if (c.contacto_email) {
-              var aMail = items[2].querySelector("a");
+            if (label.includes("correo") && c.contacto_email) {
+              var aMail = li.querySelector("a");
               if (aMail) {
                 aMail.textContent = c.contacto_email;
                 aMail.href = "mailto:" + c.contacto_email;
               }
             }
-          }
+          });
         }
       }
 
@@ -524,10 +535,8 @@
         var addressEls = document.querySelectorAll(".footer-address, .contact-address");
         addressEls.forEach(function (el) { el.textContent = c.direccion; });
       }
-      if (c.contacto_telefono) {
-        var telEls = document.querySelectorAll(".footer-tel, .contact-tel");
-        telEls.forEach(function (el) { el.textContent = c.contacto_telefono; });
-      }
+      var telEls = document.querySelectorAll(".footer-tel, .contact-tel");
+      telEls.forEach(function (el) { el.remove(); });
       if (c.contacto_email) {
         var mailEls = document.querySelectorAll(".footer-email, .contact-email");
         mailEls.forEach(function (el) { 

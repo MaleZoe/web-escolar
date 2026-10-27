@@ -5,7 +5,7 @@
    =========================================================== */
 :root {
   --verde: #346401;
-  --verde-claro: #4a8c05;
+  --verde-claro: #78cf24;
   --verde-oscuro: #1f3d01;
   --rojo: #fd0002;
   --negro: #111111;
@@ -709,11 +709,13 @@ html:not([data-theme="dark"]) .theme-icon-moon {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--verde-claro);
+  font-weight: 600;
 }
 .esp-desc {
   margin: 0;
   max-width: 60ch;
-  color: rgba(255, 255, 255, 0.84);
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.6;
 }
 .esp-foto {
   overflow: hidden;
@@ -2259,11 +2261,11 @@ html:not([data-theme="dark"]) .theme-icon-moon {
 
 .esp {
   --acento: var(--verde-claro);
-  --acento-rgb: 52, 100, 1;
+  --acento-rgb: 120, 207, 36;
 }
 .esp--verde {
   --acento: var(--verde-claro);
-  --acento-rgb: 52, 100, 1;
+  --acento-rgb: 120, 207, 36;
 }
 .esp--rojo {
   --acento: #ff5457;

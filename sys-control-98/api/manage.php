@@ -271,11 +271,10 @@ try {
                 if (!empty($data['hitos_descripcion'])) {
                     $indexHtml = preg_replace('/(<p class="hitos-sub">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['hitos_descripcion']) . '$3', $indexHtml);
                 }
-                if (!empty($data['direccion']) || !empty($data['contacto_telefono']) || !empty($data['contacto_email'])) {
+                if (!empty($data['direccion']) || !empty($data['contacto_email'])) {
                     $dir = $data['direccion'] ?? 'Juan B. Justo 4287';
-                    $tel = $data['contacto_telefono'] ?? '(0223) 472-2408';
                     $em = $data['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar';
-                    $indexHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $tel . ' · ' . $em) . '$3', $indexHtml);
+                    $indexHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $em) . '$3', $indexHtml);
                 }
                 @file_put_contents($indexPath, $indexHtml);
             }
@@ -284,10 +283,6 @@ try {
             $contactoPath = __DIR__ . '/../../pages/contacto.html';
             if (file_exists($contactoPath) && is_writable($contactoPath)) {
                 $conHtml = file_get_contents($contactoPath);
-                if (!empty($data['contacto_telefono'])) {
-                    $telClean = preg_replace('/[^0-9]/', '', $data['contacto_telefono']);
-                    $conHtml = preg_replace('/(<p class="rot">Teléfono<\/p>\s*<p><a href="tel:)[^"]*(">\s*)(.*?)(<\/a><\/p>)/s', '$1+54' . $telClean . '$2' . htmlspecialchars($data['contacto_telefono']) . '$4', $conHtml);
-                }
                 if (!empty($data['contacto_email'])) {
                     $conHtml = preg_replace('/(<p class="rot">Correo<\/p>\s*<p><a href="mailto:)[^"]*(">\s*)(.*?)(<\/a><\/p>)/s', '$1' . htmlspecialchars($data['contacto_email']) . '$2' . htmlspecialchars($data['contacto_email']) . '$4', $conHtml);
                 }

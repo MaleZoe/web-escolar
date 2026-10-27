@@ -209,10 +209,6 @@ $proyectos = $stmtProy->fetchAll();
                   <input type="text" name="direccion" value="<?= htmlspecialchars($contenido['direccion'] ?? 'Av. Juan B. Justo 4287, Mar del Plata') ?>" />
                 </div>
                 <div class="field">
-                  <label>Teléfono Institucional</label>
-                  <input type="text" name="contacto_telefono" value="<?= htmlspecialchars($contenido['contacto_telefono'] ?? '(0223) 472-2408') ?>" />
-                </div>
-                <div class="field mt-3">
                   <label>Correo Electrónico Oficial</label>
                   <input type="email" name="contacto_email" value="<?= htmlspecialchars($contenido['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar') ?>" />
                 </div>
