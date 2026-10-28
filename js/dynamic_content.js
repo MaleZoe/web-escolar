@@ -3,7 +3,14 @@
   "use strict";
 
   var isSubdir = window.location.pathname.includes("/pages/");
-  var apiEndpoint = (isSubdir ? "../api/get_public_data.php" : "api/get_public_data.php") + "?_t=" + Date.now();
+  var apiEndpoint = (function () {
+    try {
+      if (document.currentScript && document.currentScript.src) {
+        return new URL("../api/get_public_data.php", document.currentScript.src).href + "?_t=" + Date.now();
+      }
+    } catch (e) {}
+    return (isSubdir ? "../api/get_public_data.php" : "api/get_public_data.php") + "?_t=" + Date.now();
+  })();
 
   fetch(apiEndpoint, { cache: "no-store" })
     .then(function (res) {
@@ -14,7 +21,14 @@
       if (!data || !data.success) return;
 
       var c = data.contenido || {};
-      var imgPrefix = isSubdir ? "../img/" : "img/";
+      var imgPrefix = (function () {
+        try {
+          if (document.currentScript && document.currentScript.src) {
+            return new URL("../img/", document.currentScript.src).href;
+          }
+        } catch (e) {}
+        return isSubdir ? "../img/" : "img/";
+      })();
 
       function sanitizeEncoding(str) {
         if (!str || typeof str !== "string") return str;
@@ -506,6 +520,19 @@
 
       // ================= 5. CONTACTO Y FOOTER =================
       if (window.location.pathname.includes("contacto")) {
+        if (c.contacto_hero_tag) {
+          var heroTag = document.querySelector(".page-hero .section-tag");
+          if (heroTag) heroTag.textContent = c.contacto_hero_tag;
+        }
+        if (c.contacto_hero_titulo) {
+          var heroTitle = document.querySelector(".page-hero .page-title");
+          if (heroTitle) heroTitle.textContent = c.contacto_hero_titulo;
+        }
+        if (c.contacto_seccion_titulo) {
+          var secTitle = document.querySelector(".section.contacto .h2");
+          if (secTitle) secTitle.textContent = c.contacto_seccion_titulo;
+        }
+
         var cList = document.querySelector(".contacto-list");
         if (cList) {
           var items = cList.querySelectorAll("li");
@@ -524,8 +551,34 @@
                 aMail.href = "mailto:" + c.contacto_email;
               }
             }
+            if (label.includes("atenci") && c.contacto_horarios) {
+              var pAten = li.querySelectorAll("p")[1];
+              if (pAten) pAten.innerHTML = c.contacto_horarios.replace(/\n/g, "<br>");
+            }
           });
         }
+
+        if (c.contacto_nota) {
+          var cNota = document.querySelector(".section.contacto .reveal > .nota");
+          if (cNota) cNota.textContent = c.contacto_nota;
+        }
+
+        if (c.contacto_mapa_url) {
+          var mapIframe = document.querySelector(".section.contacto .map iframe");
+          if (mapIframe) mapIframe.src = c.contacto_mapa_url;
+        }
+        if (c.contacto_mapa_nota) {
+          var mapNota = document.querySelector(".section.contacto .map .nota");
+          if (mapNota) mapNota.textContent = c.contacto_mapa_nota;
+        }
+      }
+
+      // Footer institucional en todas las páginas
+      var footInfo = document.querySelector(".footer-info");
+      if (footInfo && (c.direccion || c.contacto_email)) {
+        var dFirst = (c.direccion || "Juan B. Justo 4287").split("\n")[0].trim();
+        var mFirst = c.contacto_email || "infoT5@eest5mdp.edu.ar";
+        footInfo.textContent = dFirst + " · " + mFirst;
       }
 
       if (c.direccion) {
@@ -540,14 +593,20 @@
           el.textContent = c.contacto_email;
           if (el.tagName === 'A') el.href = 'mailto:' + c.contacto_email;
         });
+        var emailIcons = document.querySelectorAll("a[aria-label='Email'], a[title='Correo Electrónico']");
+        emailIcons.forEach(function (a) { a.href = 'mailto:' + c.contacto_email; });
       }
       if (c.instagram_handle) {
         var igHandles = document.querySelectorAll(".ig-badge-user");
         igHandles.forEach(function (el) { el.textContent = c.instagram_handle; });
       }
       if (c.instagram_url) {
-        var igLinks = document.querySelectorAll("a[href*='instagram.com']");
+        var igLinks = document.querySelectorAll("a[href*='instagram.com'], a[aria-label='Instagram']");
         igLinks.forEach(function (el) { el.href = c.instagram_url; });
+      }
+      if (c.facebook_url) {
+        var fbLinks = document.querySelectorAll("a[href*='facebook.com'], a[aria-label='Facebook']");
+        fbLinks.forEach(function (el) { el.href = c.facebook_url; });
       }
     })
     .catch(function (err) {

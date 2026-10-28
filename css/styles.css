@@ -700,7 +700,7 @@ html:not([data-theme="dark"]) .theme-icon-moon {
   font-weight: 600;
   font-size: clamp(1.3rem, 2.2vw, 1.85rem);
   letter-spacing: -0.03em;
-  color: var(--blanco);
+  color: var(--acento, var(--verde-claro));
   margin: 0 0 6px;
   line-height: 1.22;
 }
@@ -709,7 +709,8 @@ html:not([data-theme="dark"]) .theme-icon-moon {
   font-size: 0.82rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--verde-claro);
+  color: var(--blanco);
+  opacity: 0.92;
   font-weight: 600;
 }
 .esp-desc {
@@ -2289,8 +2290,12 @@ html:not([data-theme="dark"]) .theme-icon-moon {
 .esp:focus-within .esp-num {
   color: var(--acento);
 }
-.esp-titulo {
+.esp-body h3 {
   color: var(--acento);
+}
+.esp-titulo {
+  color: var(--blanco);
+  opacity: 0.92;
 }
 
 /* ---------- Proyectos desplegables ---------- */

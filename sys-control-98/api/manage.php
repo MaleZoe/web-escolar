@@ -250,6 +250,9 @@ try {
             $indexPath = __DIR__ . '/../../index.html';
             if (file_exists($indexPath) && is_writable($indexPath)) {
                 $indexHtml = file_get_contents($indexPath);
+                if (!empty($data['hero_titulo'])) {
+                    $indexHtml = preg_replace('/(<h1 class="hero-title">)(.*?)(<\/h1>)/s', '$1' . nl2br(htmlspecialchars($data['hero_titulo'])) . '$3', $indexHtml);
+                }
                 if (!empty($data['hero_foto'])) {
                     $indexHtml = preg_replace('/(<div class="hero-media[^>]*>\s*<img src=")[^"]*(")/s', '$1img/' . $data['hero_foto'] . '$2', $indexHtml);
                 }
@@ -264,6 +267,9 @@ try {
                 }
                 if (!empty($data['anuncios_subtitulo'])) {
                     $indexHtml = preg_replace('/(<section class="section anuncios[^>]*>[\s\S]*?<p class="anuncios-sub">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['anuncios_subtitulo']) . '$3', $indexHtml);
+                }
+                if (!empty($data['especialidades_tagline'])) {
+                    $indexHtml = preg_replace('/(<section class="section especialidades[^>]*>[\s\S]*?<h2 class="h2 light">)(.*?)(<\/h2>)/s', '$1' . htmlspecialchars($data['especialidades_tagline']) . '$3', $indexHtml);
                 }
                 if (!empty($data['hitos_titulo'])) {
                     $indexHtml = preg_replace('/(<h2 class="hitos-title">)(.*?)(<\/h2>)/s', '$1' . htmlspecialchars($data['hitos_titulo']) . '$3', $indexHtml);
@@ -283,10 +289,75 @@ try {
             $contactoPath = __DIR__ . '/../../pages/contacto.html';
             if (file_exists($contactoPath) && is_writable($contactoPath)) {
                 $conHtml = file_get_contents($contactoPath);
+                if (!empty($data['contacto_hero_tag'])) {
+                    $conHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<p class="section-tag[^>]*>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['contacto_hero_tag']) . '$3', $conHtml);
+                }
+                if (!empty($data['contacto_hero_titulo'])) {
+                    $conHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<h1 class="page-title">)(.*?)(<\/h1>)/s', '$1' . htmlspecialchars($data['contacto_hero_titulo']) . '$3', $conHtml);
+                }
+                if (!empty($data['contacto_seccion_titulo'])) {
+                    $conHtml = preg_replace('/(<div class="reveal">[\s\S]*?<h2 class="h2">)(.*?)(<\/h2>)/s', '$1' . htmlspecialchars($data['contacto_seccion_titulo']) . '$3', $conHtml);
+                }
+                if (!empty($data['direccion'])) {
+                    $conHtml = preg_replace('/(<p class="rot">Dirección<\/p>\s*<p>)(.*?)(<\/p>)/s', '$1' . nl2br(htmlspecialchars($data['direccion'])) . '$3', $conHtml);
+                }
                 if (!empty($data['contacto_email'])) {
                     $conHtml = preg_replace('/(<p class="rot">Correo<\/p>\s*<p><a href="mailto:)[^"]*(">\s*)(.*?)(<\/a><\/p>)/s', '$1' . htmlspecialchars($data['contacto_email']) . '$2' . htmlspecialchars($data['contacto_email']) . '$4', $conHtml);
+                    $conHtml = preg_replace('/(href="mailto:)[^"]*(" class="footer-icon-btn" aria-label="Email")/s', '$1' . htmlspecialchars($data['contacto_email']) . '$2', $conHtml);
+                }
+                if (!empty($data['contacto_horarios'])) {
+                    $conHtml = preg_replace('/(<p class="rot">Atención<\/p>\s*<p>)(.*?)(<\/p>)/s', '$1' . nl2br(htmlspecialchars($data['contacto_horarios'])) . '$3', $conHtml);
+                }
+                if (!empty($data['contacto_nota'])) {
+                    $conHtml = preg_replace('/(<p class="nota">)(.*?)(<\/p>\s*<div class="contacto-cta-actions">)/s', '$1' . htmlspecialchars($data['contacto_nota']) . '$3', $conHtml);
+                }
+                if (!empty($data['contacto_mapa_url'])) {
+                    $conHtml = preg_replace('/(<iframe[^>]*?src=")[^"]*(")/s', '$1' . htmlspecialchars($data['contacto_mapa_url']) . '$2', $conHtml);
+                }
+                if (!empty($data['contacto_mapa_nota'])) {
+                    $conHtml = preg_replace('/(<div class="map reveal">[\s\S]*?<p class="nota">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['contacto_mapa_nota']) . '$3', $conHtml);
+                }
+                if (!empty($data['instagram_url'])) {
+                    $conHtml = preg_replace('/(href=")[^"]*(" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Instagram")/s', '$1' . htmlspecialchars($data['instagram_url']) . '$2', $conHtml);
+                }
+                if (!empty($data['facebook_url'])) {
+                    $conHtml = preg_replace('/(href=")[^"]*(" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Facebook")/s', '$1' . htmlspecialchars($data['facebook_url']) . '$2', $conHtml);
+                }
+                if (!empty($data['direccion']) || !empty($data['contacto_email'])) {
+                    $dirParts = explode("\n", $data['direccion'] ?? 'Juan B. Justo 4287');
+                    $dir = trim($dirParts[0]);
+                    $em = $data['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar';
+                    $conHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $em) . '$3', $conHtml);
                 }
                 @file_put_contents($contactoPath, $conHtml);
+            }
+
+            // Sincronizar footer en páginas restantes si hay cambios institucionales
+            $otherPages = [
+                __DIR__ . '/../../pages/escuela.html',
+                __DIR__ . '/../../pages/expotec.html',
+                __DIR__ . '/../../pages/institucionales.html'
+            ];
+            foreach ($otherPages as $oPath) {
+                if (file_exists($oPath) && is_writable($oPath)) {
+                    $oHtml = file_get_contents($oPath);
+                    if (!empty($data['direccion']) || !empty($data['contacto_email'])) {
+                        $dirParts = explode("\n", $data['direccion'] ?? 'Juan B. Justo 4287');
+                        $dir = trim($dirParts[0]);
+                        $em = $data['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar';
+                        $oHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $em) . '$3', $oHtml);
+                    }
+                    if (!empty($data['instagram_url'])) {
+                        $oHtml = preg_replace('/(href=")[^"]*(" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Instagram")/s', '$1' . htmlspecialchars($data['instagram_url']) . '$2', $oHtml);
+                    }
+                    if (!empty($data['facebook_url'])) {
+                        $oHtml = preg_replace('/(href=")[^"]*(" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Facebook")/s', '$1' . htmlspecialchars($data['facebook_url']) . '$2', $oHtml);
+                    }
+                    if (!empty($data['contacto_email'])) {
+                        $oHtml = preg_replace('/(href="mailto:)[^"]*(" class="footer-icon-btn" aria-label="Email")/s', '$1' . htmlspecialchars($data['contacto_email']) . '$2', $oHtml);
+                    }
+                    @file_put_contents($oPath, $oHtml);
+                }
             }
 
             echo json_encode(['success' => true, 'message' => 'Contenido actualizado correctamente', 'data' => $data]);
@@ -335,19 +406,26 @@ try {
             }
 
             // Sincronizar index.html en disco local si es escribible
-            if (!empty($imagen) && $id) {
+            if ($id) {
                 $indexPath = __DIR__ . '/../../index.html';
                 if (file_exists($indexPath) && is_writable($indexPath)) {
                     $indexHtml = file_get_contents($indexPath);
                     $espNums = [1 => '01', 2 => '02', 3 => '03'];
                     if (isset($espNums[$id])) {
                         $num = $espNums[$id];
-                        $pattern = '/(<div class="esp-num">' . $num . '<\/div>.*?<div class="esp-foto">\s*<img src=")[^"]*(")/s';
-                        $replacement = '$1img/' . $imagen . '$2';
-                        $updatedHtml = preg_replace($pattern, $replacement, $indexHtml, 1);
-                        if ($updatedHtml && $updatedHtml !== $indexHtml) {
-                            @file_put_contents($indexPath, $updatedHtml);
+                        if (!empty($imagen)) {
+                            $indexHtml = preg_replace('/(<div class="esp-num">' . $num . '<\/div>[\s\S]*?<div class="esp-foto">\s*<img src=")[^"]*(")/s', '$1img/' . $imagen . '$2', $indexHtml, 1);
                         }
+                        if (!empty($titulo)) {
+                            $indexHtml = preg_replace('/(<div class="esp-num">' . $num . '<\/div>[\s\S]*?<div class="esp-body">\s*<h3>)(.*?)(<\/h3>)/s', '$1' . htmlspecialchars($titulo) . '$3', $indexHtml, 1);
+                        }
+                        if (!empty($nombre)) {
+                            $indexHtml = preg_replace('/(<div class="esp-num">' . $num . '<\/div>[\s\S]*?<p class="esp-titulo">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($nombre) . '$3', $indexHtml, 1);
+                        }
+                        if (!empty($descripcion)) {
+                            $indexHtml = preg_replace('/(<div class="esp-num">' . $num . '<\/div>[\s\S]*?<p class="esp-desc">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($descripcion) . '$3', $indexHtml, 1);
+                        }
+                        @file_put_contents($indexPath, $indexHtml);
                     }
                 }
             }

@@ -83,7 +83,12 @@ $proyectos = $stmtProy->fetchAll();
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           Institucionales
         </a>
-        <!-- 8. Seguridad y Acceso -->
+        <!-- 8. Contacto -->
+        <a href="#tab-contacto" class="nav-item" data-tab="tab-contacto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          Contacto
+        </a>
+        <!-- 9. Seguridad y Acceso -->
         <a href="#tab-seguridad" class="nav-item" data-tab="tab-seguridad">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
           Seguridad & Acceso
@@ -139,7 +144,8 @@ $proyectos = $stmtProy->fetchAll();
             <option value="tab-hitos">5. Hitos Históricos</option>
             <option value="tab-expotec">6. ExpoTec</option>
             <option value="tab-institucionales">7. Institucionales</option>
-            <option value="tab-seguridad">8. Seguridad & Acceso</option>
+            <option value="tab-contacto">8. Contacto</option>
+            <option value="tab-seguridad">9. Seguridad & Acceso</option>
           </select>
         </div>
       </div>
@@ -202,7 +208,7 @@ $proyectos = $stmtProy->fetchAll();
 
             <div class="card mt-4">
               <h3 class="card-title">Datos Institucionales & Footer de la Web</h3>
-              <p class="text-muted">Información visible en la parte inferior y páginas de contacto.</p>
+              <p class="text-muted">Información postal y correo principal. Para editar horarios, mapa y canales en detalle, dirigite a la sección <strong>8. Contacto</strong>.</p>
               <div class="grid-2 mt-3">
                 <div class="field">
                   <label>Dirección</label>
@@ -211,10 +217,6 @@ $proyectos = $stmtProy->fetchAll();
                 <div class="field">
                   <label>Correo Electrónico Oficial</label>
                   <input type="email" name="contacto_email" value="<?= htmlspecialchars($contenido['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar') ?>" />
-                </div>
-                <div class="field mt-3">
-                  <label>WhatsApp de Contacto (ej: 5492235928268)</label>
-                  <input type="text" name="contacto_whatsapp" value="<?= htmlspecialchars($contenido['contacto_whatsapp'] ?? '5492235928268') ?>" />
                 </div>
               </div>
             </div>
@@ -1049,7 +1051,104 @@ $proyectos = $stmtProy->fetchAll();
           </form>
         </section>
 
-        <!-- ================= 8. PESTAÑA: SEGURIDAD & ACCESO ================= -->
+        <!-- ================= 8. PESTAÑA: CONTACTO ================= -->
+        <section id="tab-contacto" class="admin-tab">
+          <form class="content-form" onsubmit="saveGeneralContent(event)">
+            <!-- 1. Encabezado de Página -->
+            <div class="card">
+              <h3 class="card-title">Encabezado de la Página ("Contacto")</h3>
+              <p class="text-muted">Título y etiqueta visible al ingresar a la página contacto.html.</p>
+              <div class="grid-2 mt-3">
+                <div class="field">
+                  <label>Etiqueta / Tag Superior</label>
+                  <input type="text" name="contacto_hero_tag" value="<?= htmlspecialchars($contenido['contacto_hero_tag'] ?? 'Contacto') ?>" />
+                </div>
+                <div class="field">
+                  <label>Título Principal de la Sección</label>
+                  <input type="text" name="contacto_hero_titulo" value="<?= htmlspecialchars($contenido['contacto_hero_titulo'] ?? 'Escribinos o vení a conocer la escuela.') ?>" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Datos Institucionales de Contacto -->
+            <div class="card mt-4">
+              <h3 class="card-title">Datos Institucionales de Contacto</h3>
+              <p class="text-muted">Información mostrada en el listado principal de contacto.</p>
+              
+              <div class="grid-2 mt-3">
+                <div class="field">
+                  <label>Título del Bloque</label>
+                  <input type="text" name="contacto_seccion_titulo" value="<?= htmlspecialchars($contenido['contacto_seccion_titulo'] ?? 'Datos institucionales') ?>" />
+                </div>
+                <div class="field">
+                  <label>Correo Electrónico Oficial</label>
+                  <input type="email" name="contacto_email" value="<?= htmlspecialchars($contenido['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar') ?>" />
+                </div>
+              </div>
+
+              <div class="grid-2 mt-3">
+                <div class="field">
+                  <label>Dirección Postal Completa</label>
+                  <textarea name="direccion" rows="3"><?= htmlspecialchars($contenido['direccion'] ?? "Juan B. Justo 4287\nMar del Plata, Buenos Aires") ?></textarea>
+                  <small class="text-muted">Podés usar salto de línea para separar la calle de la ciudad.</small>
+                </div>
+                <div class="field">
+                  <label>Horarios de Atención / Secretaría</label>
+                  <textarea name="contacto_horarios" rows="3"><?= htmlspecialchars($contenido['contacto_horarios'] ?? 'Horarios de secretaría: a confirmar por la institución.') ?></textarea>
+                </div>
+              </div>
+
+              <div class="field mt-3">
+                <label>Aviso / Nota para Inscripciones y Trámites</label>
+                <textarea name="contacto_nota" rows="2"><?= htmlspecialchars($contenido['contacto_nota'] ?? 'Para inscripciones y documentación, consultar por correo electrónico antes de acercarse.') ?></textarea>
+              </div>
+            </div>
+
+            <!-- 3. Mapa de Ubicación -->
+            <div class="card mt-4">
+              <h3 class="card-title">Mapa de Ubicación</h3>
+              <p class="text-muted">Enlace de inserción (iframe) para visualizar el mapa interactivo de la escuela.</p>
+              
+              <div class="field mt-3">
+                <label>URL de Inserción del Mapa (src de iframe de OpenStreetMap o Google Maps)</label>
+                <input type="text" name="contacto_mapa_url" value="<?= htmlspecialchars($contenido['contacto_mapa_url'] ?? 'https://www.openstreetmap.org/export/embed.html?bbox=-57.585%2C-38.015%2C-57.555%2C-37.995&amp;layer=mapnik') ?>" />
+              </div>
+              <div class="field mt-3">
+                <label>Texto / Dirección al pie del Mapa</label>
+                <input type="text" name="contacto_mapa_nota" value="<?= htmlspecialchars($contenido['contacto_mapa_nota'] ?? 'Juan B. Justo 4287 · Mar del Plata') ?>" />
+              </div>
+            </div>
+
+            <!-- 4. Canales Digitales y Redes Oficiales -->
+            <div class="card mt-4">
+              <h3 class="card-title">Canales Digitales & Redes Sociales</h3>
+              <p class="text-muted">Enlaces visibles en la sección de contacto y en el pie de página (footer) de todo el sitio.</p>
+              
+              <div class="grid-3 mt-3">
+                <div class="field">
+                  <label>Usuario Instagram (@)</label>
+                  <input type="text" name="instagram_handle" value="<?= htmlspecialchars($contenido['instagram_handle'] ?? '@tecnicacinco_mdq') ?>" />
+                </div>
+                <div class="field">
+                  <label>Enlace Completo de Instagram</label>
+                  <input type="url" name="instagram_url" value="<?= htmlspecialchars($contenido['instagram_url'] ?? 'https://www.instagram.com/tecnicacinco_mdq/') ?>" />
+                </div>
+                <div class="field">
+                  <label>Enlace Completo de Facebook</label>
+                  <input type="url" name="facebook_url" value="<?= htmlspecialchars($contenido['facebook_url'] ?? 'https://www.facebook.com/EESTN5MDP') ?>" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn btn-primary" style="font-size: 1.05rem; padding: 12px 28px;">
+                Guardar Cambios de Contacto
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- ================= 9. PESTAÑA: SEGURIDAD & ACCESO ================= -->
         <section id="tab-seguridad" class="admin-tab">
           <div class="card" style="max-width: 560px;">
             <h3 class="card-title">Seguridad y Acceso al Panel</h3>
@@ -1202,6 +1301,6 @@ $proyectos = $stmtProy->fetchAll();
     </div>
   </div>
 
-  <script src="js/admin.js?v=2"></script>
+  <script src="js/admin.js?v=3"></script>
 </body>
 </html>
