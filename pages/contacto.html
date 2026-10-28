@@ -120,9 +120,9 @@ Mar del Plata, Buenos Aires</p>
         <div class="shell contacto-form-wide-container reveal" style="margin-top: 48px;">
           <div class="contacto-form-card">
             <h2 class="h2">Escribinos un mensaje</h2>
-            <p class="contacto-form-desc">Completá el formulario para enviarnos tu consulta directa a <strong>salviamale08@gmail.com</strong>. Te responderemos a la brevedad.</p>
+            <p class="contacto-form-desc">Completá el formulario para enviarnos tu consulta directa a <strong>infoT5@eest5mdp.edu.ar</strong>. Te responderemos a la brevedad.</p>
             
-            <form id="contactoForm" class="contacto-form" method="POST" action="https://formsubmit.co/salviamale08@gmail.com">
+            <form id="contactoForm" class="contacto-form" method="POST" action="https://formsubmit.co/infoT5@eest5mdp.edu.ar">
               <!-- Parámetros FormSubmit -->
               <input type="hidden" name="_captcha" value="false" />
               <input type="hidden" name="_template" value="table" />
@@ -272,9 +272,9 @@ Mar del Plata, Buenos Aires</p>
             }).catch(function () {});
           } catch (errDb) {}
 
-          // 2. Enviar por correo a salviamale08@gmail.com vía FormSubmit
+          // 2. Enviar por correo a infoT5@eest5mdp.edu.ar vía FormSubmit
           try {
-            var res = await fetch("https://formsubmit.co/ajax/salviamale08@gmail.com", {
+            var res = await fetch("https://formsubmit.co/ajax/infoT5@eest5mdp.edu.ar", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -286,11 +286,11 @@ Mar del Plata, Buenos Aires</p>
             var data = await res.json();
             if (res.ok && (data.success === "true" || data.success === true)) {
               sent = true;
-              showStatus("¡Muchas gracias! Tu mensaje ha sido enviado con éxito a salviamale08@gmail.com. Te responderemos a la brevedad.", false);
+              showStatus("¡Muchas gracias! Tu mensaje ha sido enviado con éxito a infoT5@eest5mdp.edu.ar. Te responderemos a la brevedad.", false);
               form.reset();
             } else if (data.message && data.message.includes("Activation")) {
               sent = true;
-              showStatus("¡Mensaje recibido! Se ha notificado a salviamale08@gmail.com.", false);
+              showStatus("¡Mensaje recibido! Se ha notificado a infoT5@eest5mdp.edu.ar.", false);
               form.reset();
             } else {
               throw new Error(data.message || "Error al enviar");

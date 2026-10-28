@@ -63,7 +63,14 @@ try {
     $stmt->execute([$nombre, $email, $asunto, $mensaje]);
 
     // Intento de envío vía PHP mail() si está soportado en el servidor
-    $destinatario = 'salviamale08@gmail.com';
+    $destinatario = 'infoT5@eest5mdp.edu.ar';
+    try {
+        $stmtMail = $pdo->query("SELECT valor FROM contenido_institucional WHERE clave = 'contacto_email' LIMIT 1");
+        $dbMail = $stmtMail ? $stmtMail->fetchColumn() : null;
+        if (!empty($dbMail) && filter_var($dbMail, FILTER_VALIDATE_EMAIL)) {
+            $destinatario = trim($dbMail);
+        }
+    } catch (Exception $em) {}
     $mailAsunto = "Nuevo mensaje web E.E.S.T. N.º 5: " . $asunto . " (" . $nombre . ")";
     $mailBody = "Se ha recibido una nueva consulta desde la página web oficial:\n\n"
               . "Nombre: $nombre\n"
