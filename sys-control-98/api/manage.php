@@ -288,7 +288,7 @@ try {
                 }
                 if (!empty($data['direccion']) || !empty($data['contacto_email'])) {
                     $dir = $data['direccion'] ?? 'Juan B. Justo 4287';
-                    $em = $data['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar';
+                    $em = $data['contacto_email'] ?? 'infot5@eest5mdp.edu.ar';
                     $indexHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $em) . '$3', $indexHtml);
                 }
                 @file_put_contents($indexPath, $indexHtml);
@@ -335,7 +335,7 @@ try {
                 if (!empty($data['direccion']) || !empty($data['contacto_email'])) {
                     $dirParts = explode("\n", $data['direccion'] ?? 'Juan B. Justo 4287');
                     $dir = trim($dirParts[0]);
-                    $em = $data['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar';
+                    $em = $data['contacto_email'] ?? 'infot5@eest5mdp.edu.ar';
                     $conHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $em) . '$3', $conHtml);
                 }
                 @file_put_contents($contactoPath, $conHtml);
@@ -353,7 +353,7 @@ try {
                     if (!empty($data['direccion']) || !empty($data['contacto_email'])) {
                         $dirParts = explode("\n", $data['direccion'] ?? 'Juan B. Justo 4287');
                         $dir = trim($dirParts[0]);
-                        $em = $data['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar';
+                        $em = $data['contacto_email'] ?? 'infot5@eest5mdp.edu.ar';
                         $oHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $em) . '$3', $oHtml);
                     }
                     if (!empty($data['instagram_url'])) {

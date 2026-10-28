@@ -90,7 +90,7 @@
       var fInfo = document.querySelector(".footer-info");
       if (fInfo) {
         var dir = c.direccion || "Juan B. Justo 4287, Mar del Plata";
-        var mail = c.contacto_email || "infoT5@eest5mdp.edu.ar";
+        var mail = c.contacto_email || "infot5@eest5mdp.edu.ar";
         fInfo.textContent = dir + " · " + mail;
       }
 
@@ -580,7 +580,7 @@
       var footInfo = document.querySelector(".footer-info");
       if (footInfo && (c.direccion || c.contacto_email)) {
         var dFirst = (c.direccion || "Juan B. Justo 4287").split("\n")[0].trim();
-        var mFirst = c.contacto_email || "infoT5@eest5mdp.edu.ar";
+        var mFirst = c.contacto_email || "infot5@eest5mdp.edu.ar";
         footInfo.textContent = dFirst + " · " + mFirst;
       }
 

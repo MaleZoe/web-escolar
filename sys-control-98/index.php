@@ -223,7 +223,7 @@ try {
                 </div>
                 <div class="field">
                   <label>Correo Electrónico Oficial</label>
-                  <input type="email" name="contacto_email" value="<?= htmlspecialchars($contenido['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar') ?>" />
+                  <input type="email" name="contacto_email" value="<?= htmlspecialchars($contenido['contacto_email'] ?? 'infot5@eest5mdp.edu.ar') ?>" />
                 </div>
               </div>
             </div>
@@ -1093,7 +1093,7 @@ try {
                 </div>
                 <div class="field">
                   <label>Correo Electrónico Oficial</label>
-                  <input type="email" name="contacto_email" value="<?= htmlspecialchars($contenido['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar') ?>" />
+                  <input type="email" name="contacto_email" value="<?= htmlspecialchars($contenido['contacto_email'] ?? 'infot5@eest5mdp.edu.ar') ?>" />
                 </div>
               </div>
 
@@ -1163,7 +1163,7 @@ try {
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
               <div>
                 <h3 class="card-title">Bandeja de Mensajes y Consultas de la Web</h3>
-                <p class="text-muted">Copia de respaldo interna de los mensajes enviados hacia <strong><?= htmlspecialchars($contenido['contacto_email'] ?? 'infoT5@eest5mdp.edu.ar') ?></strong>.</p>
+                <p class="text-muted">Copia de respaldo interna de los mensajes enviados hacia <strong><?= htmlspecialchars($contenido['contacto_email'] ?? 'infot5@eest5mdp.edu.ar') ?></strong>.</p>
               </div>
               <span class="badge" style="background: var(--verde-suave); color: var(--verde); padding: 6px 14px; border-radius: 20px; font-weight: 700;">
                 <?= count($mensajesContacto) ?> <?= count($mensajesContacto) === 1 ? 'mensaje' : 'mensajes' ?>

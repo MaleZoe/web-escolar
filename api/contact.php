@@ -63,7 +63,7 @@ try {
     $stmt->execute([$nombre, $email, $asunto, $mensaje]);
 
     // Intento de envío vía PHP mail() si está soportado en el servidor
-    $destinatario = 'infoT5@eest5mdp.edu.ar';
+    $destinatario = 'infot5@eest5mdp.edu.ar';
     try {
         $stmtMail = $pdo->query("SELECT valor FROM contenido_institucional WHERE clave = 'contacto_email' LIMIT 1");
         $dbMail = $stmtMail ? $stmtMail->fetchColumn() : null;
