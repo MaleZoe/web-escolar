@@ -237,6 +237,15 @@ try {
                 if (!empty($data['escuela_dir_cargo'])) {
                     $escHtml = preg_replace('/(<p class="auth-director-role">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['escuela_dir_cargo']) . '$3', $escHtml);
                 }
+                if (!empty($data['escuela_sec_tm'])) {
+                    $escHtml = preg_replace('/(<span class="auth-turno-label">Turno Mañana<\/span>\s*<h4 class="auth-person-name">)(.*?)(<\/h4>\s*<span class="auth-person-sub">Secretaria<\/span>)/s', '$1' . htmlspecialchars($data['escuela_sec_tm']) . '$3', $escHtml);
+                }
+                if (!empty($data['escuela_sec_tt'])) {
+                    $escHtml = preg_replace('/(<span class="auth-turno-label">Turno Tarde<\/span>\s*<h4 class="auth-person-name">)(.*?)(<\/h4>\s*<span class="auth-person-sub">Secretario<\/span>)/s', '$1' . htmlspecialchars($data['escuela_sec_tt']) . '$3', $escHtml);
+                }
+                if (!empty($data['escuela_prosec'])) {
+                    $escHtml = preg_replace('/(<span class="auth-turno-label">Prosecretaría<\/span>\s*<h4 class="auth-person-name">)(.*?)(<\/h4>\s*<span class="auth-person-sub">Prosecretaria<\/span>)/s', '$1' . htmlspecialchars($data['escuela_prosec']) . '$3', $escHtml);
+                }
                 if (!empty($data['escuela_qr_ra_url'])) {
                     $escHtml = preg_replace('/(href=")[^"]*(" class="btn btn-primary btn-sm">\s*Ver Régimen Académico)/s', '$1' . htmlspecialchars($data['escuela_qr_ra_url']) . '$2', $escHtml);
                 }
@@ -549,6 +558,24 @@ try {
             $stmt = $pdo->prepare("UPDATE usuarios SET password = :hash WHERE id = :id");
             $stmt->execute(['hash' => $hash, 'id' => $adminId]);
             echo json_encode(['success' => true, 'message' => 'Contraseña actualizada con éxito']);
+            break;
+
+        // --- MENSAJES DE CONTACTO RECIBIDOS ---
+        case 'get_mensajes_contacto':
+            try {
+                $stmt = $pdo->query("SELECT * FROM mensajes_contacto ORDER BY fecha_envio DESC");
+                $mensajes = $stmt->fetchAll();
+                echo json_encode(['success' => true, 'mensajes' => $mensajes]);
+            } catch (Exception $e) {
+                echo json_encode(['success' => true, 'mensajes' => []]);
+            }
+            break;
+
+        case 'delete_mensaje_contacto':
+            $id = intval($_POST['id'] ?? 0);
+            $stmt = $pdo->prepare("DELETE FROM mensajes_contacto WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+            echo json_encode(['success' => true]);
             break;
 
         default:

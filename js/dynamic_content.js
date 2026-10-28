@@ -205,11 +205,14 @@
             if (c.escuela_jefe_tt) jefeItems[1].textContent = c.escuela_jefe_tt;
             if (c.escuela_jefe_tn) jefeItems[2].textContent = c.escuela_jefe_tn;
           }
-          // Secretaría
+          // Secretaría y Prosecretaría
           var secItems = deptCards[2].querySelectorAll(".auth-person-name");
           if (secItems.length >= 2) {
             if (c.escuela_sec_tm) secItems[0].textContent = c.escuela_sec_tm;
             if (c.escuela_sec_tt) secItems[1].textContent = c.escuela_sec_tt;
+          }
+          if (secItems.length >= 3 && c.escuela_prosec) {
+            secItems[2].textContent = c.escuela_prosec;
           }
         }
 

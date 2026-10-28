@@ -403,3 +403,17 @@ async function changePassword(e) {
     showToast(data.error || 'Error al actualizar', true);
   }
 }
+
+// ================= MENSAJES DE CONTACTO =================
+async function deleteMensajeContacto(id) {
+  if (!confirm("¿Seguro que deseas eliminar este mensaje de la bandeja de respaldo?")) return;
+  const formData = new FormData();
+  formData.append('id', id);
+  const data = await fetchApi(getApiEndpoint('delete_mensaje_contacto'), { method: 'POST', body: formData });
+  if (data.success) {
+    showToast("Mensaje eliminado");
+    setTimeout(() => location.reload(), 600);
+  } else {
+    showToast(data.error || "Error al eliminar", true);
+  }
+}

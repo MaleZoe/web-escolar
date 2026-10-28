@@ -23,6 +23,13 @@ $hitos = $stmtHitos->fetchAll();
 // Proyectos (ExpoTec)
 $stmtProy = $pdo->query("SELECT p.*, e.nombre as especialidad_nombre FROM proyectos p LEFT JOIN especialidades e ON p.especialidad_id = e.id ORDER BY p.id DESC");
 $proyectos = $stmtProy->fetchAll();
+
+// Mensajes de contacto recibidos
+$mensajesContacto = [];
+try {
+    $stmtMsgs = $pdo->query("SELECT * FROM mensajes_contacto ORDER BY fecha_envio DESC");
+    if ($stmtMsgs) $mensajesContacto = $stmtMsgs->fetchAll();
+} catch (Exception $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -420,16 +427,20 @@ $proyectos = $stmtProy->fetchAll();
                 </div>
               </div>
 
-              <!-- Secretaría (2 Turnos) -->
-              <div class="auth-subgroup-title">4. Secretaría (2 Turnos)</div>
-              <div class="grid-2">
+              <!-- Secretaría y Prosecretaría -->
+              <div class="auth-subgroup-title">4. Secretaría y Prosecretaría</div>
+              <div class="grid-3">
                 <div class="field">
-                  <label>Turno Mañana</label>
+                  <label>Turno Mañana (Secretaria)</label>
                   <input type="text" name="escuela_sec_tm" value="<?= htmlspecialchars($contenido['escuela_sec_tm'] ?? 'Julia Domecq') ?>" />
                 </div>
                 <div class="field">
-                  <label>Turno Tarde</label>
+                  <label>Turno Tarde (Secretario)</label>
                   <input type="text" name="escuela_sec_tt" value="<?= htmlspecialchars($contenido['escuela_sec_tt'] ?? 'Mac Flores') ?>" />
+                </div>
+                <div class="field">
+                  <label>Prosecretaría</label>
+                  <input type="text" name="escuela_prosec" value="<?= htmlspecialchars($contenido['escuela_prosec'] ?? 'Mariana Palomar') ?>" />
                 </div>
               </div>
             </div>
@@ -1094,7 +1105,7 @@ $proyectos = $stmtProy->fetchAll();
                 </div>
                 <div class="field">
                   <label>Horarios de Atención / Secretaría</label>
-                  <textarea name="contacto_horarios" rows="3"><?= htmlspecialchars($contenido['contacto_horarios'] ?? 'Horarios de secretaría: a confirmar por la institución.') ?></textarea>
+                  <textarea name="contacto_horarios" rows="3"><?= htmlspecialchars($contenido['contacto_horarios'] ?? 'Horarios de atención de 7.30 a 22 hs') ?></textarea>
                 </div>
               </div>
 
@@ -1146,6 +1157,49 @@ $proyectos = $stmtProy->fetchAll();
               </button>
             </div>
           </form>
+
+          <!-- 5. Bandeja de Mensajes Recibidos -->
+          <div class="card mt-4">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 class="card-title">Bandeja de Mensajes y Consultas de la Web</h3>
+                <p class="text-muted">Copia de respaldo interna de los mensajes enviados hacia <strong>salviamale08@gmail.com</strong>.</p>
+              </div>
+              <span class="badge" style="background: var(--verde-suave); color: var(--verde); padding: 6px 14px; border-radius: 20px; font-weight: 700;">
+                <?= count($mensajesContacto) ?> <?= count($mensajesContacto) === 1 ? 'mensaje' : 'mensajes' ?>
+              </span>
+            </div>
+
+            <?php if (empty($mensajesContacto)): ?>
+              <div style="text-align: center; padding: 36px 16px; color: var(--texto-suave);">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.6;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                <p style="margin: 0;">Todavía no se han registrado mensajes desde el formulario web.</p>
+              </div>
+            <?php else: ?>
+              <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 18px;">
+                <?php foreach ($mensajesContacto as $msg): ?>
+                  <div style="background: var(--crema-suave); border: 1px solid var(--linea); border-radius: 10px; padding: 16px 18px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                      <div>
+                        <strong style="font-size: 1.05rem; color: var(--carbon);"><?= htmlspecialchars($msg['nombre']) ?></strong>
+                        <span style="color: var(--texto-suave); font-size: 0.9rem; margin-left: 8px;">&lt;<a href="mailto:<?= htmlspecialchars($msg['email']) ?>" style="color: var(--verde); font-weight: 600;"><?= htmlspecialchars($msg['email']) ?></a>&gt;</span>
+                        <div style="font-size: 0.85rem; color: var(--azul); font-weight: 600; margin-top: 2px;">
+                          Asunto: <?= htmlspecialchars($msg['asunto'] ?? 'Consulta general') ?>
+                        </div>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <small style="color: var(--texto-suave);"><?= date('d/m/Y H:i', strtotime($msg['fecha_envio'])) ?></small>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="deleteMensajeContacto(<?= $msg['id'] ?>)" title="Eliminar mensaje" style="color: #dc2626; padding: 4px 8px; font-size: 0.8rem;">
+                          &times; Eliminar
+                        </button>
+                      </div>
+                    </div>
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--linea); font-size: 0.95rem; color: var(--tinta); white-space: pre-wrap; line-height: 1.5;"><?= htmlspecialchars($msg['mensaje']) ?></div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
         </section>
 
         <!-- ================= 9. PESTAÑA: SEGURIDAD & ACCESO ================= -->
