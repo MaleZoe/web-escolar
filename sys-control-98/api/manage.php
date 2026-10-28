@@ -324,7 +324,7 @@ try {
                     $conHtml = preg_replace('/(<iframe[^>]*?src=")[^"]*(")/s', '$1' . htmlspecialchars($data['contacto_mapa_url']) . '$2', $conHtml);
                 }
                 if (!empty($data['contacto_mapa_nota'])) {
-                    $conHtml = preg_replace('/(<div class="map reveal">[\s\S]*?<p class="nota">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['contacto_mapa_nota']) . '$3', $conHtml);
+                    $conHtml = preg_replace('/(<div class="map[^"]*">[\s\S]*?<p class="nota">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['contacto_mapa_nota']) . '$3', $conHtml);
                 }
                 if (!empty($data['instagram_url'])) {
                     $conHtml = preg_replace('/(href=")[^"]*(" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Instagram")/s', '$1' . htmlspecialchars($data['instagram_url']) . '$2', $conHtml);
