@@ -1194,6 +1194,32 @@ html:not([data-theme="dark"]) .theme-icon-moon {
   flex-direction: column;
   gap: 16px;
 }
+.contacto-form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 820px) {
+  .contacto-form-row-3 {
+    grid-template-columns: 1fr;
+  }
+}
+.contacto-form-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 4px;
+}
+.contacto-form-actions-row .btn-submit-contacto {
+  width: auto;
+  min-width: 220px;
+}
+.contacto-form-disclaimer {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
 .contacto-form-field {
   display: flex;
   flex-direction: column;

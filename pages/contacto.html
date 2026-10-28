@@ -101,37 +101,35 @@ Mar del Plata, Buenos Aires</p>
               <a class="btn btn-primary" href="escuela.html">Conocer la escuela</a>
               <a class="btn btn-line" href="../index.html">Volver al inicio</a>
             </div>
-
-            <!-- Ubicación y Mapa en Columna Izquierda -->
-            <div class="contacto-map-card" style="margin-top: 28px;">
-              <h2 class="h2" style="font-size: 1.05rem; margin-bottom: 12px;">Ubicación en el mapa</h2>
-              <div class="map" style="margin-top: 0;">
-                <iframe
-                  title="Ubicación de la escuela en el mapa"
-                  src="https://www.openstreetmap.org/export/embed.html?bbox=-57.585%2C-38.015%2C-57.555%2C-37.995&amp;layer=mapnik"
-                  loading="lazy"
-                  width="100%"
-                  height="260"
-                  style="width: 100%; border-radius: 12px; display: block;"
-                ></iframe>
-                <p class="nota">Juan B. Justo 4287 · Mar del Plata</p>
-              </div>
-            </div>
           </div>
 
-          <!-- Columna 2: Formulario de Contacto Directo -->
-          <div class="contacto-form-wrapper reveal">
-            <div class="contacto-form-card">
-              <h2 class="h2">Escribinos un mensaje</h2>
-              <p class="contacto-form-desc">Completá el formulario para enviarnos tu consulta directa a <strong>salviamale08@gmail.com</strong>. Te responderemos a la brevedad.</p>
-              
-              <form id="contactoForm" class="contacto-form" method="POST" action="https://formsubmit.co/salviamale08@gmail.com">
-                <!-- Parámetros FormSubmit -->
-                <input type="hidden" name="_captcha" value="false" />
-                <input type="hidden" name="_template" value="table" />
-                <input type="hidden" name="_subject" value="Nuevo mensaje desde la Web E.E.S.T. N.º 5" />
-                <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" />
+          <!-- Columna 2: Mapa de Ubicación -->
+          <div class="map reveal">
+            <iframe
+              title="Ubicación de la escuela en el mapa"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=-57.585%2C-38.015%2C-57.555%2C-37.995&amp;layer=mapnik"
+              loading="lazy"
+              width="600"
+              height="450"
+            ></iframe>
+            <p class="nota">Juan B. Justo 4287 · Mar del Plata</p>
+          </div>
+        </div>
 
+        <!-- Formulario de Contacto a lo Ancho (Debajo) -->
+        <div class="shell contacto-form-wide-container reveal" style="margin-top: 48px;">
+          <div class="contacto-form-card">
+            <h2 class="h2">Escribinos un mensaje</h2>
+            <p class="contacto-form-desc">Completá el formulario para enviarnos tu consulta directa a <strong>salviamale08@gmail.com</strong>. Te responderemos a la brevedad.</p>
+            
+            <form id="contactoForm" class="contacto-form" method="POST" action="https://formsubmit.co/salviamale08@gmail.com">
+              <!-- Parámetros FormSubmit -->
+              <input type="hidden" name="_captcha" value="false" />
+              <input type="hidden" name="_template" value="table" />
+              <input type="hidden" name="_subject" value="Nuevo mensaje desde la Web E.E.S.T. N.º 5" />
+              <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" />
+
+              <div class="contacto-form-row-3">
                 <div class="contacto-form-field">
                   <label for="contacto_nombre">Nombre y Apellido *</label>
                   <input type="text" id="contacto_nombre" name="nombre" placeholder="Ej: Juan Pérez" required />
@@ -153,20 +151,23 @@ Mar del Plata, Buenos Aires</p>
                     <option value="Otro motivo">Otro motivo</option>
                   </select>
                 </div>
+              </div>
 
-                <div class="contacto-form-field">
-                  <label for="contacto_mensaje">Mensaje *</label>
-                  <textarea id="contacto_mensaje" name="mensaje" rows="4" placeholder="Escribí acá tu consulta o mensaje..." required></textarea>
-                </div>
+              <div class="contacto-form-field">
+                <label for="contacto_mensaje">Mensaje *</label>
+                <textarea id="contacto_mensaje" name="mensaje" rows="4" placeholder="Escribí acá tu consulta o mensaje..." required></textarea>
+              </div>
 
+              <div class="contacto-form-actions-row">
                 <button type="submit" id="contactoSubmitBtn" class="btn btn-primary btn-submit-contacto">
                   <span>Enviar Mensaje</span>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                 </button>
+                <span class="contacto-form-disclaimer">* Mensaje enviado directamente a la casilla de correo oficial.</span>
+              </div>
 
-                <div id="contactoStatus" class="contacto-status" style="display: none;" role="alert"></div>
-              </form>
-            </div>
+              <div id="contactoStatus" class="contacto-status" style="display: none;" role="alert"></div>
+            </form>
           </div>
         </div>
       </section>
