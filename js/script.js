@@ -535,7 +535,8 @@ var EESTModal = (function () {
   // Sincronización automática con Behold
   function loadBeholdFeed(url) {
     var feedUrl = url || FEED_URL;
-    fetch(feedUrl)
+    var fetchUrl = feedUrl + (feedUrl.indexOf("?") === -1 ? "?" : "&") + "_t=" + Date.now();
+    fetch(fetchUrl, { cache: "no-store" })
       .then(function (res) {
         if (!res.ok) throw new Error("HTTP error " + res.status);
         return res.json();
