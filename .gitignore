@@ -4,6 +4,8 @@
 *.rar
 zip.zip
 tec.zip
+*.mp4
+video web.mp4
 
 # Dependencias Node.js
 node_modules/

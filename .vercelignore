@@ -1,0 +1,15 @@
+# Archivos pesados y multimedia fuera de funciones serverless
+*.mp4
+*.zip
+*.tar.gz
+*.rar
+database.sql
+
+# Documentación y desarrollo local
+docs/
+README.md
+
+# Dependencias no necesarias para el despliegue serverless
+node_modules/
+package.json
+package-lock.json
