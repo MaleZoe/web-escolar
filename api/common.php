@@ -83,7 +83,8 @@ if (!function_exists('appLoadEnv')) {
         }
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: DENY');
-        header("Content-Security-Policy: frame-ancestors 'none'");
+        // El panel y las paginas usan scripts en linea: por eso script-src incluye 'unsafe-inline'.
+        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' https:; connect-src 'self' https://feeds.behold.so https://formsubmit.co; frame-src https://www.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self' https://formsubmit.co; frame-ancestors 'none'");
         header('Referrer-Policy: strict-origin-when-cross-origin');
     }
 

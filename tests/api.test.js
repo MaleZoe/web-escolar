@@ -1,0 +1,110 @@
+// Pruebas de API, CRUD y seguridad. Se ejecutan con: npm test (ver tests/run.js)
+const {execFileSync}=require('child_process');const fs=require('fs');const path=require('path');
+const B=process.env.TEST_BASE;const SITE=process.env.TEST_SITE;
+const sql=q=>execFileSync(process.env.TEST_MYSQL,['-uroot','-N','--default-character-set=utf8mb4',process.env.TEST_DB,'-e',q],{encoding:'utf8'}).trim();
+const R=[];const ok=(id,name,pass,info='')=>{R.push({id,name,pass:!!pass});console.log(`${pass?'PASS':'FAIL'} ${id} ${name}${info!==''?' :: '+info:''}`)};
+class C{constructor(){this.c={}}
+ async f(u,o={}){const h={...(o.headers||{})};const ck=Object.entries(this.c).map(([k,v])=>k+'='+v).join('; ');if(ck)h.cookie=ck;
+  const r=await fetch(B+u,{redirect:'manual',...o,headers:h});for(const s of r.headers.getSetCookie?.()||[]){const[kv]=s.split(';');const i=kv.indexOf('=');const k=kv.slice(0,i),v=kv.slice(i+1);if(v==='deleted'||/Max-Age=0/i.test(s))delete this.c[k];else this.c[k]=v}
+  r.txt=await r.text();try{r.j=JSON.parse(r.txt)}catch{r.j=null}return r}}
+const PASS=process.env.TEST_PASS;const USER='gestor_sys98';
+const login=async(c,pw=PASS,hdr={})=>{const g=await c.f('/sys-control-98/login.php',{headers:hdr});const t=(g.txt.match(/name="csrf_token" value="([^"]+)"/)||[])[1]||'';
+ return c.f('/sys-control-98/login.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded',...hdr},body:new URLSearchParams({csrf_token:t,usuario:USER,password:pw})})};
+const clr=()=>sql('DELETE FROM intentos_login; DELETE FROM rate_limit_contacto;');
+const fd=(o)=>{const f=new FormData();for(const[k,v]of Object.entries(o))f.append(k,v);return f};
+(async()=>{
+ clr();
+ for(const p of ['/','/pages/escuela.html','/pages/expotec.html','/pages/institucionales.html','/pages/contacto.html']){const r=await new C().f(p);ok('PUB','GET '+p,r.status===200,r.status)}
+ const fav=await new C().f('/favicon.png');ok('PUB-FAV','favicon.png existe',fav.status===200,fav.status);
+ const pub=await new C().f('/api/get_public_data.php');ok('API-1','API publica responde JSON success',pub.j?.success===true);
+ ok('API-2','API sin hashes ni password',!/\$2y\$|password/.test(pub.txt));
+ ok('API-3','API no expone autor_id',!/autor_id/.test(pub.txt));
+ ok('API-4','Sin iintegramente duplicado',!pub.txt.includes('\u00ed\u00ed'));
+ let r=await new C().f('/sys-control-98/api/manage.php?action=get_mensajes_contacto');ok('SEC-1','manage sin sesion=401',r.status===401,r.status);
+ r=await new C().f('/api/image.php?file=config.php');ok('SEC-2','image .php=403',r.status===403,r.status);
+ r=await new C().f('/api/image.php?file=../sys-control-98/config.php');ok('SEC-3','image traversal=403',r.status===403,r.status);
+ r=await new C().f('/img/hero.jpg');ok('SEC-4','imagen estatica=200',r.status===200,r.status);
+ fs.writeFileSync(path.join(SITE,'sys-control-98','marker.txt'),'MARKER-INSIDE');
+ r=await new C().f('/sys-control-98/marker.txt');ok('SEC-6','admin.php no incluye archivos arbitrarios',!r.txt.includes('MARKER-INSIDE'),'status '+r.status);
+ r=await new C().f('/sys-control-98');ok('SEC-7','/sys-control-98 sin barra redirige bien',r.status===301&&/\/sys-control-98\/$/.test(r.headers.get('location')||''),r.status+' '+r.headers.get('location'));
+ let c=new C();for(let i=0;i<5;i++)await login(c,'mal-'+i);
+ r=await login(new C());ok('AUTH-1','bloqueo tras 5 fallos (clave correcta rechazada)',r.status===200&&/bloqueado/i.test(r.txt),r.status);
+ sql("UPDATE intentos_login SET bloqueado_hasta=DATE_SUB(NOW(),INTERVAL 1 MINUTE), ultimo_intento=DATE_SUB(NOW(),INTERVAL 20 MINUTE)");
+ r=await login(new C(),'mal-tras-bloqueo');ok('AUTH-2','tras vencer bloqueo, un fallo no re-bloquea',!/superado el l/i.test(r.txt));
+ clr();
+ for(let i=0;i<7;i++){const ip='10.0.0.'+i;await login(new C(),'mal-'+i,{'CF-Connecting-IP':ip,'X-Forwarded-For':ip})}
+ const rows=sql('SELECT COUNT(*) FROM intentos_login');ok('AUTH-3','cabeceras IP falsas no esquivan el bloqueo',rows==='1','filas IP='+rows);
+ clr();
+ const a=new C();r=await login(a);ok('AUTH-4','login correcto redirige',r.status===302,r.status+' '+r.headers.get('location'));
+ const panel=await a.f('/sys-control-98/index.php');const tok=(panel.txt.match(/CSRF_TOKEN = "([^"]+)"/)||[])[1];ok('AUTH-5','panel carga con token',panel.status===200&&!!tok);
+ ok('HDR-1','panel anti-clickjacking',/DENY/i.test(panel.headers.get('x-frame-options')||''));
+ const csp=panel.headers.get('content-security-policy')||'';ok('HDR-2','panel con CSP completa',/default-src 'self'/.test(csp)&&/object-src 'none'/.test(csp)&&/frame-ancestors 'none'/.test(csp));
+ const M='/sys-control-98/api/manage.php';
+ const post=(action,o={})=>{const f=fd({...o,action,csrf_token:tok});return a.f(M,{method:'POST',body:f})};
+ r=await a.f(M,{method:'POST',body:fd({action:'delete_hito',id:'99999'})});ok('CSRF-1','POST sin token=403',r.status===403,r.status);
+ const mark='Prueba '+Date.now();
+ r=await post('save_content',{'content[hero_subtitulo]':mark});ok('CONT-1','save_content guarda',r.j?.success===true);
+ ok('CONT-2','persiste en BD',sql("SELECT valor FROM contenido_institucional WHERE clave='hero_subtitulo'")===mark);
+ ok('CONT-3','API publica lo refleja',(await new C().f('/api/get_public_data.php')).j.contenido.hero_subtitulo===mark);
+ r=await post('save_content',{'content[hero_titulo]':'7 a\u00f1os de t\u00e9cnica'});
+ const idx=fs.readFileSync(path.join(SITE,'index.html'),'utf8');ok('CONT-4','guardar no corrompe index.html',/<h1 class="hero-title">/.test(idx));
+ r=await post('save_content',{'content[bad key!]':'x'});ok('CONT-5','rechaza clave invalida',r.j?.success===false);
+ sql("DELETE FROM contenido_institucional WHERE clave='bad key!'");
+ r=await post('save_especialidad',{nombre:'TestEsp',titulo:'T',descripcion:'D',icono:'laptop',duracion_anios:'7'});ok('ESP-1','crear',r.j?.success===true);
+ let id=sql("SELECT id FROM especialidades WHERE nombre='TestEsp'");const num=sql(`SELECT numero FROM especialidades WHERE id=${id||0}`);ok('ESP-2','en BD con numero propio',!!id&&num!=='01',num);
+ r=await post('save_especialidad',{id,nombre:'TestEsp2',titulo:'T',descripcion:'D2',icono:'laptop',duracion_anios:'6'});ok('ESP-3','editar persiste',sql(`SELECT nombre FROM especialidades WHERE id=${id}`)==='TestEsp2');
+ r=await post('save_especialidad',{nombre:'',descripcion:''});ok('ESP-4','valida obligatorios',r.j?.success===false);
+ sql("DELETE FROM especialidades WHERE nombre=''");
+ r=await post('delete_especialidad',{id});ok('ESP-5','borrar',sql(`SELECT COUNT(*) FROM especialidades WHERE id=${id}`)==='0');
+ r=await post('save_hito',{anio:'2098',titulo:"Malo",resumen:'R',descripcion:'D',orden:'9',enlace:'javascript:alert(1)'});ok('HITO-1','rechaza enlace javascript:',r.j?.success===false);
+ sql("DELETE FROM hitos_historicos WHERE anio='2098'");
+ r=await post('save_hito',{anio:'2099',titulo:"Hito O'Test",resumen:'R',descripcion:'D',orden:'9',enlace:'https://example.com/a'});ok('HITO-2','crear',r.j?.success===true);
+ id=sql("SELECT id FROM hitos_historicos WHERE anio='2099'");
+ const p2=await a.f('/sys-control-98/index.php');ok('HITO-3','boton Editar seguro con apostrofo',!/editHito\(\{[^)]*O'Test/.test(p2.txt));
+ r=await post('save_hito',{id,anio:'2099',titulo:'Hito2',resumen:'R',descripcion:'D',orden:'9'});ok('HITO-4','editar',sql(`SELECT titulo FROM hitos_historicos WHERE id=${id}`)==='Hito2');
+ r=await post('delete_hito',{id});ok('HITO-5','borrar',sql(`SELECT COUNT(*) FROM hitos_historicos WHERE id=${id}`)==='0');
+ const png=fs.readFileSync(path.join(SITE,'img','logo.png'));
+ const f=fd({action:'save_proyecto',csrf_token:tok,titulo:'ProyTest',descripcion:'D',especialidad_id:'1',anio:'2026',estado:'Finalizado',destacado:'1'});f.append('imagen_archivo',new Blob([png],{type:'image/png'}),'a.png');
+ r=await a.f(M,{method:'POST',body:f});ok('PROY-1','crear con imagen',r.j?.success===true);
+ id=sql("SELECT id FROM proyectos WHERE titulo='ProyTest'");const img=sql(`SELECT imagen FROM proyectos WHERE id=${id||0}`);ok('PROY-2','imagen guardada',/^proy_/.test(img),img);
+ let enBD='0';try{enBD=sql(`SELECT COUNT(*) FROM archivos_subidos WHERE nombre='${img}'`)}catch(e){}
+ ok('UP-1','archivo en BD (archivos_subidos)',enBD==='1');
+ const dp=path.join(SITE,'img',img);if(img&&fs.existsSync(dp))fs.unlinkSync(dp);
+ r=await new C().f('/img/'+img);ok('UP-2','se sirve desde BD sin disco (ruta /img)',r.status===200&&(r.headers.get('content-type')||'').includes('image/png'),r.status);
+ const ff=fd({action:'save_proyecto',csrf_token:tok,id,titulo:'ProyTest',descripcion:'D',especialidad_id:'1',anio:'2026',estado:'Finalizado'});ff.append('imagen_archivo',new Blob(['<?php echo 1; ?>'],{type:'image/jpeg'}),'foto.jpg');
+ r=await a.f(M,{method:'POST',body:ff});ok('UP-3','archivo falso informa error',r.j?.success===false,(JSON.stringify(r.j)||'').slice(0,80));
+ const fg=fd({action:'upload_image',csrf_token:tok});fg.append('image',new Blob(['x'],{type:'image/png'}),'shell.php');r=await a.f(M,{method:'POST',body:fg});ok('UP-4','.php rechazado',r.j?.success===false);
+ r=await post('save_proyecto',{titulo:'X',descripcion:'D',especialidad_id:'1',anio:'2026',estado:'Inventado'});ok('PROY-3','estado invalido rechazado sin SQL',r.j?.success===false&&!/SQLSTATE/.test(r.txt),(r.j?.error||'').slice(0,70));
+ r=await post('save_proyecto',{titulo:'X',descripcion:'D',especialidad_id:'99999',anio:'2026',estado:'Finalizado'});ok('ERR-1','error de BD sin filtrar SQL',r.j?.success===false&&!/SQLSTATE/.test(r.txt),(r.j?.error||'').slice(0,70));
+ sql("DELETE FROM proyectos WHERE titulo='X'");
+ r=await post('save_proyecto',{id,titulo:'ProyTest2',descripcion:'D',especialidad_id:'2',anio:'2025',estado:'En ExpoTec'});ok('PROY-4','editar',sql(`SELECT titulo FROM proyectos WHERE id=${id}`)==='ProyTest2');
+ ok('PROY-5','editar conserva imagen',sql(`SELECT imagen FROM proyectos WHERE id=${id}`)===img);
+ r=await post('delete_proyecto',{id});ok('PROY-6','borrar',sql(`SELECT COUNT(*) FROM proyectos WHERE id=${id}`)==='0');
+ clr();const J=(o,h={})=>new C().f('/api/contact.php',{method:'POST',headers:{'content-type':'application/json',...h},body:JSON.stringify(o)});
+ const msg={nombre:'Test',email:'t@example.com',asunto:'Consulta general',mensaje:'Mensaje de prueba '+Date.now()};
+ r=await J(msg);ok('CON-1','contacto guarda',r.j?.success===true&&sql(`SELECT COUNT(*) FROM mensajes_contacto WHERE mensaje='${msg.mensaje}'`)==='1');
+ const mid=sql(`SELECT MIN(id) FROM mensajes_contacto WHERE mensaje='${msg.mensaje}'`);
+ const n0=sql('SELECT COUNT(*) FROM mensajes_contacto');r=await J({...msg,_honey:'bot'});ok('CON-2','honeypot descarta',sql('SELECT COUNT(*) FROM mensajes_contacto')===n0&&r.j?.success===true);
+ r=await J({...msg,email:'mal'});ok('CON-3','email invalido=400',r.status===400);
+ r=await new C().f('/api/contact.php');ok('CON-4','GET=405',r.status===405);
+ for(let i=0;i<4;i++)await J(msg);r=await J(msg);ok('CON-5','6.o mensaje=429',r.status===429,r.status);
+ clr();for(let i=0;i<7;i++){const ip='10.1.0.'+i;await J(msg,{'CF-Connecting-IP':ip,'X-Forwarded-For':ip})}
+ const rl=sql('SELECT COUNT(*) FROM rate_limit_contacto');ok('CON-6','cabeceras IP falsas no esquivan rate limit',rl==='1','filas='+rl);
+ clr();ok('CON-7','contacto sin CORS abierto',!(await J(msg)).headers.get('access-control-allow-origin'));
+ sql(`DELETE FROM mensajes_contacto WHERE email='t@example.com' AND id<>${mid}`);
+ const p3=await a.f('/sys-control-98/index.php');ok('INB-1','mensaje visible en bandeja',p3.txt.includes(msg.mensaje));
+ r=await post('toggle_mensaje_leido',{id:mid});ok('INB-2','marcar leido',r.j?.success===true&&sql(`SELECT leido FROM mensajes_contacto WHERE id=${mid}`)==='1');
+ r=await post('delete_mensaje_contacto',{id:mid});ok('INB-3','borrar mensaje',sql(`SELECT COUNT(*) FROM mensajes_contacto WHERE id=${mid}`)==='0');
+ const NP=PASS+'Nueva1';const old=sql(`SELECT password FROM usuarios WHERE usuario='${USER}'`);
+ r=await post('change_password',{new_password:'corta1',current_password:PASS});ok('PW-1','rechaza <8',r.j?.success===false);
+ sql(`UPDATE usuarios SET password='${old}' WHERE usuario='${USER}'`);
+ r=await post('change_password',{new_password:NP});ok('PW-2','exige clave actual',r.j?.success===false);
+ sql(`UPDATE usuarios SET password='${old}' WHERE usuario='${USER}'`);
+ r=await post('change_password',{new_password:NP,current_password:PASS});const h=sql(`SELECT password FROM usuarios WHERE usuario='${USER}'`);ok('PW-3','cambia con costo 12',r.j?.success===true&&h.startsWith('$2y$12$'),h.slice(0,7));
+ const a2=new C();r=await login(a2,NP);ok('PW-4','entra con clave nueva',r.status===302);
+ sql(`UPDATE usuarios SET password='${old}' WHERE usuario='${USER}'`);clr();
+ r=await a.f('/sys-control-98/logout.php');const still=await a.f('/sys-control-98/index.php');ok('OUT-1','logout por GET no cierra sesion (anti CSRF)',still.status===200,still.status);
+ if(still.status===200){r=await a.f('/sys-control-98/logout.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({csrf_token:tok})});}
+ const af=await a.f('/sys-control-98/index.php');ok('OUT-2','logout POST cierra sesion',af.status===302,af.status);
+ const t=R.filter(x=>x.pass).length;console.log(`\nTOTAL ${t}/${R.length} PASS`);console.log('FAILED: '+R.filter(x=>!x.pass).map(x=>x.id).join(' '));if(t!==R.length)process.exitCode=1;
+})().catch(e=>{console.error('ABORT',e);process.exit(1)});

@@ -5,6 +5,7 @@
 *.rar
 database.sql
 migrations/
+tests/
 .htaccess
 .env.example
 

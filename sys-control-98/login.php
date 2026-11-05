@@ -73,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
                 if ($user && $passwordMatch) {
                     // Éxito: limpiar intentos fallidos de esta IP
                     $pdo->prepare("DELETE FROM intentos_login WHERE ip = :ip")->execute(['ip' => $ip]);
+                    error_log('login_ok usuario=' . $user['usuario'] . ' ip=' . $ip);
                     session_regenerate_id(true);
 
                     $_SESSION['admin_user'] = [
@@ -90,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
                     // Fallo: registrar intento y aplicar bloqueo gradual
                     $intentos = ($intentoRow['intentos'] ?? 0) + 1;
                     $bloquear = $intentos >= 5;
+                    error_log('login_fallido intentos=' . $intentos . ' ip=' . $ip . ($bloquear ? ' bloqueado=15min' : ''));
                     $bloqueoSql = $bloquear ? "DATE_ADD(NOW(), INTERVAL 15 MINUTE)" : "NULL";
 
                     if ($bloquear) {

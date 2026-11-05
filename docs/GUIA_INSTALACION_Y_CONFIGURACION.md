@@ -100,6 +100,9 @@ mysql -u root -p web_escolar_db < database.sql
 
 ---
 
+> [!WARNING]
+> `database.sql` contiene `DROP TABLE`: úsalo solo en una instalación nueva. En una base con datos reales ejecuta los archivos de `migrations/`, que no borran nada.
+
 ## ⚙️ Paso 3: Configuración de Variables de Entorno
 
 El sistema incluye valores predeterminados seguros para entornos locales estándar de XAMPP / Laragon:

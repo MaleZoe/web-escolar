@@ -736,6 +736,13 @@ try {
                 </div>
               </div>
               <div class="field mt-3">
+                <label>Catálogo Público de Proyectos en la Página ExpoTec</label>
+                <select name="expotec_catalogo_visible">
+                  <option value="0" <?= ($contenido['expotec_catalogo_visible'] ?? '0') !== '1' ? 'selected' : '' ?>>Oculto (revisar los proyectos antes de publicar)</option>
+                  <option value="1" <?= ($contenido['expotec_catalogo_visible'] ?? '0') === '1' ? 'selected' : '' ?>>Visible</option>
+                </select>
+              </div>
+              <div class="field mt-3">
                 <label>Párrafo Principal (Lead)</label>
                 <textarea name="expotec_desc" rows="3"><?= htmlspecialchars($contenido['expotec_desc'] ?? 'La ExpoTec es la exposición anual en la que las tres especialidades —Construcciones, Informática y Electrónica— muestran los proyectos desarrollados durante el ciclo lectivo. Las aulas y los talleres se abren a las familias, a otras escuelas y a la comunidad de Mar del Plata.') ?></textarea>
               </div>

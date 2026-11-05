@@ -10,7 +10,7 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteRule ^(docs|\.git|\.claude|node_modules)(/|$) - [F,L]
+  RewriteRule ^(docs|tests|migrations|\.git|\.claude|node_modules)(/|$) - [F,L]
 
   # Imágenes guardadas solo en la base de datos, igual que la ruta /img de vercel.json
   RewriteCond %{REQUEST_FILENAME} !-f
@@ -21,4 +21,5 @@ Options -Indexes
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' https:; connect-src 'self' https://feeds.behold.so https://formsubmit.co; frame-src https://www.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self' https://formsubmit.co; frame-ancestors 'self'"
 </IfModule>

@@ -682,7 +682,8 @@
           card.appendChild(body);
           proyGrid.appendChild(card);
         });
-        proySection.hidden = data.proyectos.length === 0;
+        // Se publica solo cuando el panel lo habilita, despues de revisar los proyectos cargados.
+        proySection.hidden = data.proyectos.length === 0 || c.expotec_catalogo_visible !== "1";
       }
 
       // ================= 5. CONTACTO Y FOOTER =================
