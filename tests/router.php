@@ -2,8 +2,13 @@
 // Emula vercel.json sobre php -S (emulacion, no Vercel real)
 $p = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $root = $_SERVER['DOCUMENT_ROOT'];
-if (preg_match('#^/sys-control-98/(css|js)/#', $p)) return false;
-if (preg_match('#^/sys-control-98#', $p)) { require "$root/api/admin.php"; return; }
+if (preg_match('#^/sys-control-[a-z0-9]+/(css|js)/(.+)$#', $p, $m)) {
+  $f = "$root/sys-control-98/{$m[1]}/{$m[2]}";
+  if (!is_file($f)) { http_response_code(404); return; }
+  header('Content-Type: ' . ($m[1] === 'css' ? 'text/css' : 'application/javascript'));
+  readfile($f); return;
+}
+if (preg_match('#^/sys-control-[a-z0-9]+(/.*)?$#', $p)) { require "$root/api/admin.php"; return; }
 if (preg_match('#^/api/(.+)#', $p, $m)) {
   $f = "$root/api/{$m[1]}";
   if (is_file($f) && substr($f, -4) === '.php') { require $f; return; }

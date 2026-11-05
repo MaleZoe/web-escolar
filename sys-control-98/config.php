@@ -1,6 +1,7 @@
 <?php
 // Configuración y Seguridad Central de Acceso con soporte de variables de entorno (Vercel / Nube)
 require_once __DIR__ . '/../api/common.php';
+require_once __DIR__ . '/panel_acceso.php';
 appSecurityHeaders();
 
 if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: 'localhost');

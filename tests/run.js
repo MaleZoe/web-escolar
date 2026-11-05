@@ -21,4 +21,11 @@ const cleanup=()=>{if(server)server.kill();try{mysql(['-e','DROP DATABASE IF EXI
   server=spawn(PHP,['-S','127.0.0.1:'+PORT,'-t',site,path.join(__dirname,'router.php')],{env,stdio:'ignore',cwd:site});
   await new Promise(r=>setTimeout(r,1500));
   execFileSync(process.execPath,[path.join(__dirname,'api.test.js')],{stdio:'inherit',env:{...process.env,TEST_BASE:'http://127.0.0.1:'+PORT,TEST_SITE:site,TEST_MYSQL:MYSQL,TEST_DB:DB,TEST_PASS:pass}});
+  // Ruta rotativa: otro servidor con la funcion activa y un correo simulado.
+  server.kill();
+  mysql([DB,'-e','DELETE FROM intentos_login; DELETE FROM panel_acceso;']);
+  const ROT=String(Number(PORT)+2),MOCK=String(Number(PORT)+1);
+  server=spawn(PHP,['-S','127.0.0.1:'+ROT,'-t',site,path.join(__dirname,'router.php')],{env:{...env,ADMIN_ALERT_EMAIL:'prueba@example.com',PANEL_ROTATE_TEST:'1',PANEL_MAIL_ENDPOINT:'http://127.0.0.1:'+MOCK+'/',PANEL_BASE_URL:'http://127.0.0.1:'+ROT},stdio:'ignore',cwd:site});
+  await new Promise(r=>setTimeout(r,1500));
+  execFileSync(process.execPath,[path.join(__dirname,'rotation.test.js')],{stdio:'inherit',env:{...process.env,TEST_ROT_BASE:'http://127.0.0.1:'+ROT,TEST_MOCK_PORT:MOCK,TEST_PASS:pass}});
 })().catch(e=>{process.exitCode=1;if(!e.status)console.error(e)}).finally(cleanup);

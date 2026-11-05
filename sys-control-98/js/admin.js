@@ -125,11 +125,8 @@ function clearFileInputs(modalId) {
 
 // HELPER DE COMUNICACIÓN CON LA API
 function getApiEndpoint(action) {
-  var base = (document.currentScript && document.currentScript.src)
-    ? new URL('../api/manage.php', document.currentScript.src).href
-    : (window.location.pathname.includes('/sys-control-98')
-        ? window.location.pathname.substring(0, window.location.pathname.indexOf('/sys-control-98') + 15) + '/api/manage.php'
-        : 'api/manage.php');
+  // Relativa a la pagina: la carpeta del panel puede cambiar en cada inicio de sesion.
+  var base = new URL('api/manage.php', window.location.href).pathname;
   return action ? base + (base.includes('?') ? '&' : '?') + 'action=' + encodeURIComponent(action) : base;
 }
 

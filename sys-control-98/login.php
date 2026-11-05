@@ -85,7 +85,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
                     $_SESSION['last_activity'] = time();
                     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
-                    header('Location: index.php');
+                    // Si el correo no sale, la ruta actual sigue vigente: nadie pierde el acceso.
+                    $rutaNueva = null;
+                    try {
+                        $rutaNueva = panelRotateAfterLogin($pdo, $user['usuario'], $ip);
+                    } catch (Exception $eRota) {
+                        error_log('panel_rotacion: ' . $eRota->getMessage());
+                        $_SESSION['panel_aviso'] = 'No se pudo cambiar la ruta del panel.';
+                    }
+                    header('Location: ' . ($rutaNueva ?? 'index.php'));
                     exit;
                 } else {
                     // Fallo: registrar intento y aplicar bloqueo gradual

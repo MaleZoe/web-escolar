@@ -17,16 +17,20 @@
       "continue": true
     },
     {
-      "src": "/sys-control-98/css/(.*)",
+      "src": "/sys-control-[a-z0-9]+/css/(.*)",
       "dest": "/sys-control-98/css/$1"
     },
     {
-      "src": "/sys-control-98/js/(.*)",
+      "src": "/sys-control-[a-z0-9]+/js/(.*)",
       "dest": "/sys-control-98/js/$1"
     },
     {
-      "src": "/sys-control-98(.*)",
+      "src": "/sys-control-[a-z0-9]+(/.*)?",
       "dest": "/api/admin.php"
+    },
+    {
+      "src": "/api/(admin|common|db)\\.php",
+      "status": 404
     },
     {
       "src": "/api/(.*)",

@@ -202,6 +202,15 @@ El proyecto está preparado para ejecutarse en entornos serverless modernos como
 
 ---
 
+## 🔁 Ruta rotativa del panel (Vercel)
+
+Con la variable `ADMIN_ALERT_EMAIL`, cada inicio de sesión cambia la ruta del panel a `/sys-control-<token>/` y envía el enlace nuevo por FormSubmit. Hay que activar la casilla una vez, con el correo de confirmación de FormSubmit.
+
+- Si el correo falla, la ruta no cambia y el panel muestra un aviso.
+- Si se pierde el enlace, ejecutá `DELETE FROM panel_acceso;` en la base: vuelve la ruta `/sys-control-98/`.
+
+---
+
 ## 🩺 Solución de Problemas Frecuentes (Troubleshooting)
 
 ### 1. "Error seguro de conexión a la base de datos"

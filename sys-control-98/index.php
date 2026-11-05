@@ -46,6 +46,10 @@ try {
   </script>
 </head>
 <body>
+  <?php if (!empty($_SESSION['panel_aviso'])): ?>
+    <div role="alert" style="background: #fcf0e2; color: #a84b00; padding: 10px 16px; font-weight: 600; text-align: center;"><?= htmlspecialchars($_SESSION['panel_aviso']) ?></div>
+    <?php unset($_SESSION['panel_aviso']); ?>
+  <?php endif; ?>
   <div class="admin-layout">
     <!-- BARRA LATERAL -->
     <aside class="admin-sidebar" id="adminSidebar">
@@ -1513,6 +1517,6 @@ try {
     </div>
   </div>
 
-  <script src="js/admin.js?v=4"></script>
+  <script src="js/admin.js?v=5"></script>
 </body>
 </html>

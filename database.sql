@@ -314,6 +314,18 @@ CREATE TABLE `rate_limit_contacto` (
   `primera_peticion` int(11) NOT NULL,
   PRIMARY KEY (`ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `panel_acceso`
+--
+
+DROP TABLE IF EXISTS `panel_acceso`;
+CREATE TABLE `panel_acceso` (
+  `id` tinyint(4) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `actualizado` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

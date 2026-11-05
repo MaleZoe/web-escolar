@@ -1,15 +1,20 @@
 <?php
-// Enrutador serverless del panel sys-control-98 en Vercel.
+// Enrutador serverless del panel en Vercel: /sys-control-<ruta>/...
 // Solo se incluyen los archivos de esta lista: nunca una ruta armada con la URL.
-$path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+$path = (string)parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 
-// Sin la barra final, los redireccionamientos relativos (login.php) saldrian del panel.
-if ($path === '/sys-control-98') {
-    header('Location: /sys-control-98/', true, 301);
+function adminNotFound(): void {
+    http_response_code(404);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Not Found';
     exit;
 }
 
-$subpath = trim((string)preg_replace('#^/sys-control-98/?#', '', (string)$path), '/');
+if (!preg_match('#^/sys-control-([a-z0-9]+)(/.*)?$#', $path, $m)) {
+    adminNotFound();
+}
+$slug = $m[1];
+$rest = $m[2] ?? '';
 
 $routes = [
     ''                        => 'index.php',
@@ -23,11 +28,22 @@ $routes = [
     'api/get_public_data.php' => 'api/get_public_data.php',
 ];
 
-if (!isset($routes[$subpath])) {
-    http_response_code(404);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Not Found';
+require_once __DIR__ . '/../sys-control-98/config.php';
+
+// Una ruta vencida responde igual que una que nunca existió.
+if (!panelSlugIsValid(getDB(), $slug)) {
+    adminNotFound();
+}
+
+// Sin la barra final, los redireccionamientos relativos (login.php) saldrian del panel.
+if ($rest === '') {
+    header('Location: /sys-control-' . $slug . '/', true, 301);
     exit;
+}
+
+$subpath = trim($rest, '/');
+if (!isset($routes[$subpath])) {
+    adminNotFound();
 }
 
 require __DIR__ . '/../sys-control-98/' . $routes[$subpath];
