@@ -40,6 +40,9 @@ try {
   <link rel="icon" type="image/png" href="../favicon.png" />
   <link rel="stylesheet" href="../css/styles.css?v=3" />
   <link rel="stylesheet" href="css/admin.css?v=2" />
+  <script>
+    window.CSRF_TOKEN = <?= json_encode(getCSRFToken()) ?>;
+  </script>
 </head>
 <body>
   <div class="admin-layout">
@@ -860,6 +863,69 @@ try {
               <button type="submit" class="btn btn-primary">Guardar Todos los Cambios de ExpoTec</button>
             </div>
           </form>
+
+          <!-- Bloque 4: Catálogo de Proyectos Técnicos ExpoTec -->
+          <div class="card mt-4">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 class="card-title">Proyectos Escolares en Exposición</h3>
+                <p class="text-muted">Listado de proyectos técnicos desarrollados por los estudiantes.</p>
+              </div>
+              <button class="btn btn-primary" onclick="openProyectoModal()">+ Nuevo Proyecto ExpoTec</button>
+            </div>
+
+            <div class="table-responsive mt-3">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Foto</th>
+                    <th>Título del Proyecto</th>
+                    <th>Especialidad</th>
+                    <th>Año</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php if (empty($proyectos)): ?>
+                    <tr>
+                      <td colspan="6" style="text-align: center; color: var(--texto-suave); padding: 24px;">No hay proyectos registrados aún.</td>
+                    </tr>
+                  <?php else: ?>
+                    <?php foreach ($proyectos as $proy): ?>
+                      <tr>
+                        <td>
+                          <?php $pF = $proy['imagen'] ?: 'hero.jpg'; ?>
+                          <img src="../img/<?= htmlspecialchars($pF) ?>" alt="" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px;" onerror="this.src='../img/hero.jpg'" />
+                        </td>
+                        <td>
+                          <strong><?= htmlspecialchars($proy['titulo']) ?></strong>
+                          <?php if (!empty($proy['subtitulo'])): ?>
+                            <div style="font-size: 0.85rem; color: var(--texto-suave);"><?= htmlspecialchars($proy['subtitulo']) ?></div>
+                          <?php endif; ?>
+                        </td>
+                        <td>
+                          <span class="badge" style="background: var(--crema-suave); border: 1px solid var(--linea); padding: 4px 8px; border-radius: 6px; font-size: 0.82rem;">
+                            <?= htmlspecialchars($proy['especialidad_nombre'] ?? 'General') ?>
+                          </span>
+                        </td>
+                        <td><?= htmlspecialchars($proy['anio']) ?></td>
+                        <td>
+                          <span class="badge" style="background: <?= $proy['estado'] === 'Finalizado' ? '#dcfce7; color: #166534' : ($proy['estado'] === 'En ExpoTec' ? '#e0e7ff; color: #3730a3' : '#fef9c3; color: #854d0e') ?>; padding: 4px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 600;">
+                            <?= htmlspecialchars($proy['estado']) ?>
+                          </span>
+                        </td>
+                        <td class="actions-cell">
+                          <button class="btn-action edit" onclick='editProyecto(<?= json_encode($proy, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>Editar</button>
+                          <button class="btn-action delete" onclick="deleteProyecto(<?= (int)$proy['id'] ?>)">Eliminar</button>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </section>
 
         <!-- ================= 7. PESTAÑA: INSTITUCIONALES ================= -->
@@ -1350,6 +1416,76 @@ try {
         <div class="modal-footer mt-4">
           <button type="button" class="btn btn-secondary" onclick="closeModal('modal-hito')">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar Hito</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL PROYECTO EXPOTEC -->
+  <div id="modal-proyecto" class="modal">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 id="modal-proy-title">Proyecto ExpoTec</h3>
+        <button class="modal-close" onclick="closeModal('modal-proyecto')">&times;</button>
+      </div>
+      <form onsubmit="submitProyecto(event)" enctype="multipart/form-data">
+        <input type="hidden" name="id" id="proy_id" />
+        <div class="grid-2">
+          <div class="field">
+            <label>Título del Proyecto *</label>
+            <input type="text" name="titulo" id="proy_titulo" required placeholder="Ej: Satduino, Brazo Biónico..." />
+          </div>
+          <div class="field">
+            <label>Especialidad *</label>
+            <select name="especialidad_id" id="proy_especialidad" required>
+              <?php foreach ($especialidades as $esp): ?>
+                <option value="<?= (int)$esp['id'] ?>"><?= htmlspecialchars($esp['nombre']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        </div>
+        <div class="field mt-3">
+          <label>Subtítulo o Breve Síntesis</label>
+          <input type="text" name="subtitulo" id="proy_subtitulo" placeholder="Ej: Prototipo funcional con sensores..." />
+        </div>
+        <div class="field mt-3">
+          <label>Descripción Detallada *</label>
+          <textarea name="descripcion" id="proy_descripcion" rows="4" placeholder="Describí los objetivos, tecnologías y funcionamiento del proyecto..." required></textarea>
+        </div>
+        <div class="grid-3 mt-3">
+          <div class="field">
+            <label>Año</label>
+            <input type="number" name="anio" id="proy_anio" value="<?= date('Y') ?>" required />
+          </div>
+          <div class="field">
+            <label>Estado</label>
+            <select name="estado" id="proy_estado">
+              <option value="En desarrollo">En desarrollo</option>
+              <option value="Finalizado">Finalizado</option>
+              <option value="En ExpoTec">En ExpoTec</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Destacado en Portada</label>
+            <select name="destacado" id="proy_destacado">
+              <option value="0">No</option>
+              <option value="1">Sí (Destacar)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2 mt-3">
+          <div class="field">
+            <label>Subir Imagen</label>
+            <input type="file" name="imagen_archivo" accept="image/*" />
+          </div>
+          <div class="field">
+            <label>O nombre de archivo existente</label>
+            <input type="text" name="imagen" id="proy_imagen" placeholder="Ej: satduino.jpg" />
+          </div>
+        </div>
+        <div class="modal-footer mt-4">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-proyecto')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Proyecto</button>
         </div>
       </form>
     </div>

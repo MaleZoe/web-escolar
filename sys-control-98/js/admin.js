@@ -127,8 +127,19 @@ function getApiEndpoint(action) {
   return action ? base + (base.includes('?') ? '&' : '?') + 'action=' + encodeURIComponent(action) : base;
 }
 
-async function fetchApi(url, options) {
+async function fetchApi(url, options = {}) {
   try {
+    options.headers = options.headers || {};
+    if (window.CSRF_TOKEN) {
+      if (typeof options.headers.set === 'function') {
+        options.headers.set('X-CSRF-Token', window.CSRF_TOKEN);
+      } else {
+        options.headers['X-CSRF-Token'] = window.CSRF_TOKEN;
+      }
+    }
+    if (options.body instanceof FormData && window.CSRF_TOKEN && !options.body.has('csrf_token')) {
+      options.body.append('csrf_token', window.CSRF_TOKEN);
+    }
     const res = await fetch(url, options);
     const text = await res.text();
     try {
@@ -273,18 +284,22 @@ function openProyectoModal() {
   document.getElementById('proy_descripcion').value = '';
   document.getElementById('proy_anio').value = new Date().getFullYear();
   document.getElementById('proy_imagen').value = '';
+  if (document.getElementById('proy_estado')) document.getElementById('proy_estado').value = 'En desarrollo';
+  if (document.getElementById('proy_destacado')) document.getElementById('proy_destacado').value = '0';
   document.getElementById('modal-proyecto').classList.add('active');
 }
 
 function editProyecto(proy) {
   document.getElementById('modal-proy-title').textContent = 'Editar Proyecto ExpoTec';
-  document.getElementById('proy_id').value = proy.id;
-  document.getElementById('proy_titulo').value = proy.titulo;
+  document.getElementById('proy_id').value = proy.id || '';
+  document.getElementById('proy_titulo').value = proy.titulo || '';
   document.getElementById('proy_subtitulo').value = proy.subtitulo || '';
-  document.getElementById('proy_descripcion').value = proy.descripcion;
-  document.getElementById('proy_especialidad').value = proy.especialidad_id;
-  document.getElementById('proy_anio').value = proy.anio;
+  document.getElementById('proy_descripcion').value = proy.descripcion || '';
+  document.getElementById('proy_especialidad').value = proy.especialidad_id || 1;
+  document.getElementById('proy_anio').value = proy.anio || new Date().getFullYear();
   document.getElementById('proy_imagen').value = proy.imagen || '';
+  if (document.getElementById('proy_estado')) document.getElementById('proy_estado').value = proy.estado || 'En desarrollo';
+  if (document.getElementById('proy_destacado')) document.getElementById('proy_destacado').value = (proy.destacado == 1 || proy.destacado === true) ? '1' : '0';
   document.getElementById('modal-proyecto').classList.add('active');
 }
 

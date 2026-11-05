@@ -1,5 +1,6 @@
 <?php
 // Servidor de imágenes dinámicas y archivos subidos desde TiDB Cloud o disco local
+header('X-Content-Type-Options: nosniff');
 require_once __DIR__ . '/db.php';
 
 $filename = isset($_GET['file']) ? basename($_GET['file']) : '';
@@ -8,11 +9,27 @@ if (empty($filename)) {
     exit('Nombre de archivo no especificado');
 }
 
+$safeMimes = [
+    'jpg'  => 'image/jpeg',
+    'jpeg' => 'image/jpeg',
+    'png'  => 'image/png',
+    'webp' => 'image/webp',
+    'gif'  => 'image/gif',
+    'mp4'  => 'video/mp4',
+    'webm' => 'video/webm',
+    'pdf'  => 'application/pdf'
+];
+$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+if (!array_key_exists($ext, $safeMimes)) {
+    http_response_code(403);
+    exit('Tipo de archivo no permitido');
+}
+
 // 1. Si existe físicamente en /img/ en disco, redirigir o servir
 $localPath = __DIR__ . '/../img/' . $filename;
 if (file_exists($localPath) && is_file($localPath)) {
-    $mime = mime_content_type($localPath) ?: 'image/jpeg';
-    header('Content-Type: ' . $mime);
+    $detectedMime = mime_content_type($localPath) ?: $safeMimes[$ext];
+    header('Content-Type: ' . $detectedMime);
     header('Cache-Control: public, max-age=86400');
     readfile($localPath);
     exit;
@@ -26,7 +43,8 @@ try {
     $row = $stmt->fetch();
 
     if ($row && !empty($row['datos'])) {
-        header('Content-Type: ' . $row['mime']);
+        $servedMime = in_array($row['mime'], $safeMimes, true) ? $row['mime'] : $safeMimes[$ext];
+        header('Content-Type: ' . $servedMime);
         header('Cache-Control: public, max-age=86400, stale-while-revalidate=604800');
         header('Content-Length: ' . strlen($row['datos']));
         echo $row['datos'];

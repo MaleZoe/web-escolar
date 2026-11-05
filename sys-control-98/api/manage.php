@@ -32,27 +32,66 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 }
 $_SESSION['last_activity'] = time();
 
+// Verificación CSRF reforzada para todas las operaciones mutantes (POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!verifyCSRFToken($token)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Validación de seguridad CSRF fallida. Recarga la página.']);
+        exit;
+    }
+}
+
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $pdo = getDB();
 
-// Función de subida segura y multiplataforma (compatible con Serverless / Vercel y disco local)
+// Función de subida segura y multiplataforma con validación estricta de MIME y tamaño
 function saveUploadedFile($file, $prefix = 'img') {
     if (empty($file['name']) || $file['error'] !== UPLOAD_ERR_OK) {
         return null;
     }
-    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'webm', 'pdf'];
-    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!in_array($ext, $allowed)) {
+
+    // Tamaño máximo: 12MB
+    if ($file['size'] > 12 * 1024 * 1024) {
         return null;
     }
 
-    $newFileName = $prefix . '_' . time() . '_' . rand(100, 999) . '.' . $ext;
+    $allowed = [
+        'jpg'  => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png'  => ['image/png'],
+        'webp' => ['image/webp'],
+        'gif'  => ['image/gif'],
+        'mp4'  => ['video/mp4'],
+        'webm' => ['video/webm'],
+        'pdf'  => ['application/pdf']
+    ];
+
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!array_key_exists($ext, $allowed)) {
+        return null;
+    }
+
+    // Validación del tipo MIME real en el servidor mediante finfo (magic bytes)
+    $realMime = '';
+    if (function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $realMime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+    } elseif (function_exists('mime_content_type')) {
+        $realMime = mime_content_type($file['tmp_name']);
+    }
+
+    if (!empty($realMime) && !in_array($realMime, $allowed[$ext], true)) {
+        return null;
+    }
+
+    $mime = !empty($realMime) ? $realMime : ($allowed[$ext][0] ?? 'application/octet-stream');
+    $newFileName = $prefix . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
     $fileData = file_get_contents($file['tmp_name']);
     if ($fileData === false) {
         return null;
     }
-
-    $mime = !empty($file['type']) ? $file['type'] : 'image/' . ($ext === 'jpg' ? 'jpeg' : $ext);
 
     // 1. Guardar en TiDB Cloud / MySQL (archivos_subidos)
     try {

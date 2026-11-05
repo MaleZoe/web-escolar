@@ -277,6 +277,44 @@ LOCK TABLES `usuarios` WRITE;
 INSERT INTO `usuarios` VALUES (1,'gestor_sys98','acceso.seguro@gestion-interna.net','$2y$12$Nz/d8vd4s0NnWKSFbW8T7O1YoePcvuODAwkHC/9GCiarr5S0s19FS','Administrador de Gestión',1,'local','https://ui-avatars.com/api/?name=Director+EEST5&background=346401&color=fff','2026-10-19 22:38:49'),(2,'profesor.garcia','prof.garcia@eest5.edu.ar','$2a$10$wG2s31Wc/bKkX3a5oD.Jie3XQ6p0h4gXwVkW8vWfDqmTqVqX6h4i2','Prof. Roberto García',2,'local','https://ui-avatars.com/api/?name=Roberto+Garcia&background=111111&color=fff','2026-10-19 22:38:49'),(3,'alumno.martin','alumno.martin@eest5.edu.ar','$2a$10$wG2s31Wc/bKkX3a5oD.Jie3XQ6p0h4gXwVkW8vWfDqmTqVqX6h4i2','Martín Soler (Informática 7mo)',3,'local','https://ui-avatars.com/api/?name=Martin+Soler&background=FD0002&color=fff','2026-10-19 22:38:49'),(4,'alumnogoogle_goo','alumno.google@gmail.com','$2a$10$L3eUIPktJMS34Hjlcsojc.8Mqgt0HjdQt/N2BrvV3qKKeoibw1H.K','Estudiante Google',3,'google','https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150','2026-10-21 22:36:12'),(5,'alumnonuevo_goo','alumno.nuevo@gmail.com','$2a$10$HSUMxaCQrsR/X8BB..uFBeG.U6pmxJidRM/Z8vBRcUz44egvlmeWm','Estudiante Google',3,'google','https://ui-avatars.com/api/?name=Estudiante%20Google&background=346401&color=fff','2026-10-21 23:23:00');
 /*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Table structure for table `sesiones_php`
+--
+
+DROP TABLE IF EXISTS `sesiones_php`;
+CREATE TABLE `sesiones_php` (
+  `id` varchar(128) NOT NULL,
+  `datos` mediumtext NOT NULL,
+  `ultimo_acceso` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_ultimo_acceso` (`ultimo_acceso`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `archivos_subidos`
+--
+
+DROP TABLE IF EXISTS `archivos_subidos`;
+CREATE TABLE `archivos_subidos` (
+  `nombre` varchar(255) NOT NULL,
+  `mime` varchar(100) NOT NULL,
+  `datos` mediumblob NOT NULL,
+  `fecha` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `rate_limit_contacto`
+--
+
+DROP TABLE IF EXISTS `rate_limit_contacto`;
+CREATE TABLE `rate_limit_contacto` (
+  `ip` varchar(45) NOT NULL,
+  `intentos` int(11) NOT NULL DEFAULT 1,
+  `primera_peticion` int(11) NOT NULL,
+  PRIMARY KEY (`ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

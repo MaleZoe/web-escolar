@@ -29,6 +29,12 @@ try {
         $input = $_POST;
     }
 
+    // 1. Detección de Bots con Honeypot
+    if (!empty($input['_honey']) || !empty($_POST['_honey'])) {
+        echo json_encode(['success' => true, 'message' => 'Consulta procesada']);
+        exit;
+    }
+
     $nombre  = trim($input['nombre'] ?? '');
     $email   = trim($input['email'] ?? '');
     $asunto  = trim($input['asunto'] ?? 'Consulta general');
@@ -46,7 +52,49 @@ try {
         exit;
     }
 
+    // 2. Límites de longitud para prevenir DoS / payloads desmedidos
+    if (mb_strlen($nombre) > 150 || mb_strlen($email) > 150 || mb_strlen($asunto) > 200 || mb_strlen($mensaje) > 5000) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'La longitud de los campos supera el límite máximo permitido']);
+        exit;
+    }
+
     $pdo = getPublicDB();
+
+    // 3. Control de tasa de envíos (Rate Limiting por IP: máx 5 mensajes cada 15 min)
+    $ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    if (strpos($ip, ',') !== false) {
+        $ip = trim(explode(',', $ip)[0]);
+    }
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `rate_limit_contacto` (
+            `ip` VARCHAR(45) NOT NULL,
+            `intentos` INT NOT NULL DEFAULT 1,
+            `primera_peticion` INT NOT NULL,
+            PRIMARY KEY (`ip`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+        $ahora = time();
+        $stmtRL = $pdo->prepare("SELECT intentos, primera_peticion FROM rate_limit_contacto WHERE ip = ?");
+        $stmtRL->execute([$ip]);
+        $rlRow = $stmtRL->fetch();
+
+        if ($rlRow) {
+            if ($ahora - $rlRow['primera_peticion'] < 900) {
+                if ($rlRow['intentos'] >= 5) {
+                    http_response_code(429);
+                    echo json_encode(['success' => false, 'error' => 'Has enviado varios mensajes recientemente. Por favor, aguarda 15 minutos antes de enviar otro.']);
+                    exit;
+                }
+                $pdo->prepare("UPDATE rate_limit_contacto SET intentos = intentos + 1 WHERE ip = ?")->execute([$ip]);
+            } else {
+                $pdo->prepare("UPDATE rate_limit_contacto SET intentos = 1, primera_peticion = ? WHERE ip = ?")->execute([$ahora, $ip]);
+            }
+        } else {
+            $pdo->prepare("INSERT INTO rate_limit_contacto (ip, intentos, primera_peticion) VALUES (?, 1, ?)")->execute([$ip, $ahora]);
+        }
+    } catch (Exception $eRL) {}
 
     // Crear tabla si aún no existe
     $pdo->exec("CREATE TABLE IF NOT EXISTS `mensajes_contacto` (

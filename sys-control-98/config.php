@@ -46,10 +46,28 @@ function getDB() {
 // Manejador de sesiones en base de datos para entornos serverless (Vercel / Lambda)
 class PdoSessionHandler implements SessionHandlerInterface {
     private $pdo;
+    private static $tableChecked = false;
     public function __construct($pdo) {
         $this->pdo = $pdo;
+        $this->ensureTable();
+    }
+    private function ensureTable(): void {
+        if (self::$tableChecked) return;
+        try {
+            $this->pdo->exec("CREATE TABLE IF NOT EXISTS `sesiones_php` (
+                `id` VARCHAR(128) NOT NULL,
+                `datos` MEDIUMTEXT NOT NULL,
+                `ultimo_acceso` INT(11) NOT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_ultimo_acceso` (`ultimo_acceso`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+            self::$tableChecked = true;
+        } catch (Exception $e) {
+            // Continuar en caso de restricciones de privilegios DDL
+        }
     }
     public function open($savePath, $sessionName): bool {
+        $this->ensureTable();
         return true;
     }
     public function close(): bool {
@@ -70,7 +88,13 @@ class PdoSessionHandler implements SessionHandlerInterface {
             $stmt = $this->pdo->prepare("INSERT INTO sesiones_php (id, datos, ultimo_acceso) VALUES (:id, :d, :t) ON DUPLICATE KEY UPDATE datos = :d2, ultimo_acceso = :t2");
             return $stmt->execute(['id' => $id, 'd' => $data, 't' => time(), 'd2' => $data, 't2' => time()]);
         } catch (Exception $e) {
-            return false;
+            $this->ensureTable();
+            try {
+                $stmt = $this->pdo->prepare("INSERT INTO sesiones_php (id, datos, ultimo_acceso) VALUES (:id, :d, :t) ON DUPLICATE KEY UPDATE datos = :d2, ultimo_acceso = :t2");
+                return $stmt->execute(['id' => $id, 'd' => $data, 't' => time(), 'd2' => $data, 't2' => time()]);
+            } catch (Exception $e2) {
+                return false;
+            }
         }
     }
     public function destroy($id): bool {
