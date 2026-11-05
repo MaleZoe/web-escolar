@@ -2,6 +2,7 @@
 // Ruta rotativa del panel: /sys-control-<token>/. Cambia en cada inicio de sesión y el enlace nuevo se envía por correo.
 // El token solo oculta la ruta: el acceso sigue exigiendo usuario, contraseña, sesión y CSRF.
 // Se activa cuando ADMIN_ALERT_EMAIL está definido en un entorno serverless.
+// El correo sale por Resend si RESEND_API_KEY está definida; si no, por FormSubmit.
 //
 // Recuperación si se pierde el enlace, desde la base de datos:
 //   DELETE FROM panel_acceso;
@@ -50,48 +51,61 @@ function panelBaseUrl(): string {
     return $proto . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
 }
 
-// Devuelve true solo si el servicio confirmó el envío.
-function panelSendLink(string $link, string $usuario, string $ip): bool {
-    $to = panelAlertEmail();
-    if ($to === null || !function_exists('curl_init')) {
-        return false;
-    }
-    $endpoint = getenv('PANEL_MAIL_ENDPOINT') ?: 'https://formsubmit.co/ajax/' . rawurlencode($to);
-    $origin = panelBaseUrl();
-    $payload = json_encode([
-        '_subject' => 'Nuevo enlace del panel E.E.S.T. N.º 5',
-        '_template' => 'table',
-        '_captcha' => 'false',
-        'Aviso' => 'Se inició sesión en el panel. El enlace anterior dejó de funcionar.',
-        'Nuevo enlace' => $link,
-        'Usuario' => $usuario,
-        'IP' => $ip,
-        'Fecha (UTC)' => gmdate('Y-m-d H:i:s'),
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-    $ch = curl_init($endpoint);
+// POST JSON al servicio de correo. Devuelve el estado HTTP y la respuesta decodificada.
+function panelPostJson(string $url, array $payload, array $headers): array {
+    $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 8,
         CURLOPT_CONNECTTIMEOUT => 4,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Accept: application/json',
-            'Origin: ' . $origin,
-            'Referer: ' . $origin . '/',
-        ],
+        CURLOPT_HTTPHEADER => array_merge(['Content-Type: application/json', 'Accept: application/json'], $headers),
     ]);
     $body = curl_exec($ch);
     $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
     curl_close($ch);
-
     $data = is_string($body) ? json_decode($body, true) : null;
-    $sent = $status === 200 && is_array($data) && in_array($data['success'] ?? null, [true, 'true'], true);
+    return [$status, is_array($data) ? $data : [], $error];
+}
+
+// Devuelve true solo si el servicio confirmó el envío.
+// Con RESEND_API_KEY se usa solo Resend; el enlace nunca pasa por FormSubmit.
+function panelSendLink(string $link, string $usuario, string $ip): bool {
+    $to = panelAlertEmail();
+    if ($to === null || !function_exists('curl_init')) {
+        return false;
+    }
+    $fecha = gmdate('Y-m-d H:i:s');
+    $asunto = 'Nuevo enlace del panel E.E.S.T. N.º 5';
+    $apiKey = trim((string)getenv('RESEND_API_KEY'));
+
+    if ($apiKey !== '') {
+        $texto = "Se inició sesión en el panel. El enlace anterior dejó de funcionar.\n\n"
+               . "Nuevo enlace: $link\n\nUsuario: $usuario\nIP: $ip\nFecha (UTC): $fecha\n";
+        [$status, $data, $error] = panelPostJson(
+            getenv('PANEL_MAIL_ENDPOINT') ?: 'https://api.resend.com/emails',
+            ['from' => getenv('RESEND_FROM') ?: 'Panel EEST5 <onboarding@resend.dev>', 'to' => [$to], 'subject' => $asunto, 'text' => $texto],
+            ['Authorization: Bearer ' . $apiKey]
+        );
+        $sent = $status >= 200 && $status < 300 && !empty($data['id']);
+    } else {
+        $origin = panelBaseUrl();
+        [$status, $data, $error] = panelPostJson(
+            getenv('PANEL_MAIL_ENDPOINT') ?: 'https://formsubmit.co/ajax/' . rawurlencode($to),
+            [
+                '_subject' => $asunto, '_template' => 'table', '_captcha' => 'false',
+                'Aviso' => 'Se inició sesión en el panel. El enlace anterior dejó de funcionar.',
+                'Nuevo enlace' => $link, 'Usuario' => $usuario, 'IP' => $ip, 'Fecha (UTC)' => $fecha,
+            ],
+            ['Origin: ' . $origin, 'Referer: ' . $origin . '/']
+        );
+        $sent = $status === 200 && in_array($data['success'] ?? null, [true, 'true'], true);
+    }
+
     if (!$sent) {
-        // Sin datos del enlace: solo el resultado del servicio.
+        // Sin datos del enlace ni de la clave: solo el resultado del servicio.
         error_log('panel_correo_fallido status=' . $status . ' error=' . $error . ' mensaje=' . substr((string)($data['message'] ?? ''), 0, 120));
     }
     return $sent;

@@ -204,7 +204,7 @@ El proyecto está preparado para ejecutarse en entornos serverless modernos como
 
 ## 🔁 Ruta rotativa del panel (Vercel)
 
-Con la variable `ADMIN_ALERT_EMAIL`, cada inicio de sesión cambia la ruta del panel a `/sys-control-<token>/` y envía el enlace nuevo por FormSubmit. Hay que activar la casilla una vez, con el correo de confirmación de FormSubmit.
+Con la variable `ADMIN_ALERT_EMAIL`, cada inicio de sesión cambia la ruta del panel a `/sys-control-<token>/` y envía el enlace nuevo por correo. Usa Resend si existe `RESEND_API_KEY`; sin un dominio verificado, Resend solo envía al correo de la cuenta, que debe coincidir con `ADMIN_ALERT_EMAIL`. Sin esa clave usa FormSubmit, que requiere activar la casilla una vez.
 
 - Si el correo falla, la ruta no cambia y el panel muestra un aviso.
 - Si se pierde el enlace, ejecutá `DELETE FROM panel_acceso;` en la base: vuelve la ruta `/sys-control-98/`.

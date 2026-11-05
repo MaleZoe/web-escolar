@@ -7,10 +7,20 @@ const mock = http.createServer((req, res) => {
   let body = '';
   req.on('data', d => { body += d; });
   req.on('end', () => {
-    if (state.fail) { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ success: 'false', message: 'needs activation' })); }
-    state.mails.push(JSON.parse(body));
-    res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ success: 'true' }));
+    const resend = !!process.env.TEST_RESEND_KEY;
+    if (state.fail) { res.writeHead(resend ? 403 : 200, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ success: 'false', message: 'servicio no disponible' })); }
+    const mail = JSON.parse(body);
+    if (resend) {
+      state.authOk = req.headers.authorization === 'Bearer ' + process.env.TEST_RESEND_KEY;
+      state.toOk = Array.isArray(mail.to) && mail.to[0] === 'prueba@example.com' && !!mail.from;
+      mail['Nuevo enlace'] = (String(mail.text).match(/Nuevo enlace: (\S+)/) || [])[1];
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ id: 'mock-id' }));
+    } else {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ success: 'true' }));
+    }
+    state.mails.push(mail);
   });
 });
 const R = [];
@@ -99,8 +109,13 @@ const dirOf = (u) => u.replace(/^https?:\/\/[^/]+/, '').replace(/\/[^/]*$/, '');
   r = await req(a, d2 + '/logout.php', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ csrf_token: t2 }) });
   ok('ROT-20', 'logout vuelve al login de la misma ruta', r.status === 302 && r.headers.get('location') === 'login.php?msg=logout');
 
+  if (process.env.TEST_RESEND_KEY) {
+    ok('RES-1', 'Resend recibe la clave por cabecera', state.authOk);
+    ok('RES-2', 'Resend recibe remitente y destinatario', state.toOk);
+    ok('RES-3', 'la clave no viaja en el cuerpo', !JSON.stringify(state.mails).includes(process.env.TEST_RESEND_KEY));
+  }
   const pass = R.filter(Boolean).length;
-  console.log(`\nROTACION ${pass}/${R.length} PASS`);
+  console.log(`\nROTACION ${process.env.TEST_RESEND_KEY ? '(Resend)' : '(FormSubmit)'} ${pass}/${R.length} PASS`);
   if (pass !== R.length) process.exitCode = 1;
   mock.close();
 })().catch(e => { console.error(e); process.exitCode = 1; mock.close(); });
