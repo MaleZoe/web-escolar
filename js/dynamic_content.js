@@ -12,13 +12,24 @@
     return (isSubdir ? "../api/get_public_data.php" : "api/get_public_data.php") + "?_t=" + Date.now();
   })();
 
+  // El feed de Instagram se pide una sola vez: con la URL del panel o con la predeterminada.
+  var beholdRequested = false;
+  function requestBehold(url) {
+    if (beholdRequested || typeof window.loadBeholdFeed !== "function") return;
+    beholdRequested = true;
+    window.loadBeholdFeed(url);
+  }
+
   fetch(apiEndpoint, { cache: "no-store" })
     .then(function (res) {
       if (!res.ok) throw new Error("HTTP error " + res.status);
       return res.json();
     })
     .then(function (data) {
-      if (!data || !data.success) return;
+      if (!data || !data.success) {
+        requestBehold();
+        return;
+      }
 
       var c = data.contenido || {};
       var imgPrefix = (function () {
@@ -46,6 +57,23 @@
           .replace(/a\?o/gi, function(m) { return m[0] === 'A' ? "Año" : "año"; });
       }
 
+      function isSafeUrl(url) {
+        return /^(https?:\/\/|mailto:)/i.test(String(url || ""));
+      }
+
+      // Texto de la base con el formato mínimo que usa el sitio: negrita, cursiva y saltos de línea.
+      // Todo lo demás queda como texto, así que nunca se ejecuta como código.
+      function setRichText(el, value) {
+        el.innerHTML = String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/&lt;(\/?)(strong|em|b|i)&gt;/gi, "<$1$2>")
+          .replace(/&lt;br\s*\/?&gt;/gi, "<br>")
+          .replace(/\n/g, "<br>");
+      }
+
       function resolveImg(val) {
         if (!val) return "";
         if (val.startsWith("data:") || val.startsWith("http://") || val.startsWith("https://") || val.startsWith("/") || val.startsWith("../")) {
@@ -58,7 +86,7 @@
       if (c.hero_titulo) {
         var heroTitle = document.querySelector(".hero-title");
         if (heroTitle) {
-          heroTitle.innerHTML = c.hero_titulo.replace(/\n/g, "<br>");
+          setRichText(heroTitle, c.hero_titulo);
         }
       }
 
@@ -76,7 +104,7 @@
 
       if (c.hero_slogan) {
         var sloganEl = document.querySelector(".hero-slogan");
-        if (sloganEl) sloganEl.innerHTML = c.hero_slogan;
+        if (sloganEl) setRichText(sloganEl, c.hero_slogan);
       }
 
       if (c.hero_subtitulo) {
@@ -84,6 +112,13 @@
         if (heroSub) heroSub.textContent = c.hero_subtitulo;
         var heroLead = document.querySelector(".hero-lead");
         if (heroLead) heroLead.textContent = c.hero_subtitulo;
+      }
+
+      if (c.expotec_anuncio) {
+        document.querySelectorAll(".expo-anuncio").forEach(function (el) {
+          el.textContent = c.expotec_anuncio;
+          el.hidden = false;
+        });
       }
 
       // Footer general info
@@ -140,7 +175,14 @@
         }
         if (c.escuela_foto_caption) {
           var fCap = document.querySelector(".escuela-foto figcaption");
-          if (fCap) fCap.innerHTML = '<span class="dot" aria-hidden="true"></span>' + c.escuela_foto_caption;
+          if (fCap) {
+            fCap.textContent = "";
+            var capDot = document.createElement("span");
+            capDot.className = "dot";
+            capDot.setAttribute("aria-hidden", "true");
+            fCap.appendChild(capDot);
+            fCap.appendChild(document.createTextNode(c.escuela_foto_caption));
+          }
         }
 
         // Taller
@@ -219,11 +261,11 @@
         // Marco Normativo & QRs
         if (c.escuela_qr_ra_url) {
           var raLinks = document.querySelectorAll("a[href*='seccion=regimen-academico']");
-          raLinks.forEach(function (a) { a.href = c.escuela_qr_ra_url; });
+          raLinks.forEach(function (a) { if (!/^\s*javascript:/i.test(c.escuela_qr_ra_url)) a.href = c.escuela_qr_ra_url; });
         }
         if (c.escuela_qr_aic_url) {
           var aicLinks = document.querySelectorAll("a[href*='seccion=acuerdo-institucional']");
-          aicLinks.forEach(function (a) { a.href = c.escuela_qr_aic_url; });
+          aicLinks.forEach(function (a) { if (!/^\s*javascript:/i.test(c.escuela_qr_aic_url)) a.href = c.escuela_qr_aic_url; });
         }
       }
 
@@ -236,9 +278,7 @@
         var anSub = document.querySelector("#anuncios .section-sub, #anuncios .anuncios-sub");
         if (anSub) anSub.textContent = c.anuncios_subtitulo;
       }
-      if (c.behold_feed_url && typeof window.loadBeholdFeed === "function") {
-        window.loadBeholdFeed(c.behold_feed_url);
-      }
+      requestBehold(isSafeUrl(c.behold_feed_url) ? c.behold_feed_url : undefined);
 
       // ================= 4. EXPOTEC =================
       if (window.location.pathname.includes("expotec")) {
@@ -252,7 +292,7 @@
         }
         if (c.expotec_desc) {
           var expLead = document.querySelector(".expo-intro .lead");
-          if (expLead) expLead.innerHTML = c.expotec_desc;
+          if (expLead) setRichText(expLead, c.expotec_desc);
         }
         if (c.expotec_desc_secundaria) {
           var expBody = document.querySelector(".expo-intro .body");
@@ -315,35 +355,38 @@
           if (espTag) espTag.textContent = c.especialidades_tagline;
         }
 
-        if (data.especialidades && data.especialidades.length > 0) {
-          var espCards = espSec.querySelectorAll(".esp-list .esp");
-          if (espCards.length > 0) {
-            data.especialidades.forEach(function (esp, idx) {
-              if (idx < espCards.length) {
-                var card = espCards[idx];
-                if (esp.titulo) {
-                  var h3 = card.querySelector(".esp-body h3");
-                  if (h3) h3.textContent = sanitizeEncoding(esp.titulo);
-                }
-                if (esp.nombre) {
-                  var tit = card.querySelector(".esp-titulo");
-                  if (tit) tit.textContent = sanitizeEncoding(esp.nombre);
-                }
-                if (esp.descripcion) {
-                  var desc = card.querySelector(".esp-desc");
-                  if (desc) desc.textContent = sanitizeEncoding(esp.descripcion);
-                }
-                if (esp.imagen) {
-                  var img = card.querySelector(".esp-foto img");
-                  if (img) img.src = resolveImg(esp.imagen);
-                }
-                if (esp.numero) {
-                  var num = card.querySelector(".esp-num");
-                  if (num) num.textContent = esp.numero;
-                }
-              }
-            });
-          }
+        // La tarjeta visible es la de la base: se agregan o quitan para coincidir con ella.
+        var espList = espSec.querySelector(".esp-list");
+        if (espList && Array.isArray(data.especialidades) && data.especialidades.length > 0) {
+          var espCards = Array.prototype.slice.call(espList.querySelectorAll(".esp"));
+          var espTemplate = espCards[espCards.length - 1];
+
+          data.especialidades.forEach(function (esp, idx) {
+            var isNew = idx >= espCards.length;
+            var card = espCards[idx];
+            if (isNew) {
+              card = espTemplate.cloneNode(true);
+              card.className = "esp " + (/^esp--[a-z]+$/.test(esp.color || "") ? esp.color : "esp--verde") + " reveal is-visible";
+              var newImg = card.querySelector(".esp-foto img");
+              if (newImg) { newImg.removeAttribute("src"); newImg.alt = esp.nombre || ""; }
+              espList.appendChild(card);
+              if (window.EESTBindEspecialidad) window.EESTBindEspecialidad(card);
+            }
+            var h3 = card.querySelector(".esp-body h3");
+            if (h3 && (esp.titulo || isNew)) h3.textContent = sanitizeEncoding(esp.titulo || esp.nombre || "");
+            var tit = card.querySelector(".esp-titulo");
+            if (tit && (esp.nombre || isNew)) tit.textContent = sanitizeEncoding(esp.nombre || "");
+            var desc = card.querySelector(".esp-desc");
+            if (desc && (esp.descripcion || isNew)) desc.textContent = sanitizeEncoding(esp.descripcion || "");
+            var img = card.querySelector(".esp-foto img");
+            if (img && esp.imagen) img.src = resolveImg(esp.imagen);
+            var foto = card.querySelector(".esp-foto");
+            if (foto && isNew && !esp.imagen) foto.hidden = true;
+            var num = card.querySelector(".esp-num");
+            if (num) num.textContent = esp.numero && !isNew ? esp.numero : ("0" + (idx + 1)).slice(-2);
+          });
+
+          espCards.slice(data.especialidades.length).forEach(function (card) { card.remove(); });
         }
       }
 
@@ -398,34 +441,44 @@
             var vFileUrl = resolveImg(c.inst_ra_video_file);
             if (raSource) raSource.src = vFileUrl;
             if (raVid) raVid.load();
-          } else if (c.inst_ra_video_url) {
+          } else if (isSafeUrl(c.inst_ra_video_url)) {
             if (raSource) raSource.src = c.inst_ra_video_url;
             if (raVid) raVid.load();
           }
 
-          // Pilares
+          // Pilares: cada contenido va en el primer párrafo después de su título.
           var raH3s = paneRA.querySelectorAll("article h3");
-          var raPs = paneRA.querySelectorAll("article p");
-          if (raH3s[0] && c.inst_ra_p1_titulo) raH3s[0].textContent = c.inst_ra_p1_titulo;
-          if (c.inst_ra_p1_desc && raPs[2]) raPs[2].textContent = c.inst_ra_p1_desc;
-
-          if (raH3s[1] && c.inst_ra_p2_titulo) raH3s[1].textContent = c.inst_ra_p2_titulo;
-          if (c.inst_ra_p2_desc && raPs[3]) raPs[3].textContent = c.inst_ra_p2_desc;
-
-          if (raH3s[2] && c.inst_ra_p3_titulo) raH3s[2].textContent = c.inst_ra_p3_titulo;
-          if (c.inst_ra_p3_desc && raPs[4]) raPs[4].textContent = c.inst_ra_p3_desc;
-
-          if (raH3s[3] && c.inst_ra_p4_titulo) raH3s[3].textContent = c.inst_ra_p4_titulo;
-          if (c.inst_ra_p4_desc && raPs[5]) raPs[5].textContent = c.inst_ra_p4_desc;
-
-          if (raH3s[4] && c.inst_ra_p5_titulo) raH3s[4].textContent = c.inst_ra_p5_titulo;
-          if (c.inst_ra_p5_desc && raPs[6]) raPs[6].textContent = c.inst_ra_p5_desc;
+          [1, 2, 3, 4, 5].forEach(function (n, i) {
+            var h3 = raH3s[i];
+            if (!h3) return;
+            if (c["inst_ra_p" + n + "_titulo"]) h3.textContent = c["inst_ra_p" + n + "_titulo"];
+            var body = c["inst_ra_p" + n + "_desc"];
+            if (!body) return;
+            var node = h3.nextElementSibling;
+            while (node && node.tagName !== "P" && node.tagName !== "H3") node = node.nextElementSibling;
+            if (node && node.tagName === "P") node.textContent = body;
+          });
         }
 
         // Pestaña AIC
         var paneAIC = document.getElementById("paneAIC");
         if (paneAIC) {
           var aicCards = paneAIC.querySelectorAll(".inst-card");
+
+          // Resumen editable de un capítulo. No reemplaza los artículos del reglamento.
+          var setSummary = function (card, value, afterEl) {
+            if (!card || !value) return;
+            var anchor = afterEl || card.querySelector("h2");
+            if (!anchor) return;
+            var box = card.querySelector(".inst-chapter-summary");
+            if (!box) {
+              box = document.createElement("p");
+              box.className = "inst-chapter-summary";
+              anchor.insertAdjacentElement("afterend", box);
+            }
+            box.textContent = value;
+          };
+
           if (aicCards[0]) {
             if (c.inst_aic_pres_titulo) {
               var aicH2 = aicCards[0].querySelector("h2");
@@ -434,34 +487,37 @@
             var presPs = aicCards[0].querySelectorAll("p");
             if (c.inst_aic_pres_texto && presPs[0]) presPs[0].textContent = c.inst_aic_pres_texto;
             if (c.inst_aic_familias_texto && presPs[2]) presPs[2].textContent = c.inst_aic_familias_texto;
+            setSummary(aicCards[0], c.inst_aic_principios_texto, aicCards[0].querySelector("h3"));
           }
           if (aicCards[1] && c.inst_aic_marco_legal_texto) {
             var mlP = aicCards[1].querySelector("p");
             if (mlP) mlP.textContent = c.inst_aic_marco_legal_texto;
           }
-          if (aicCards[2] && c.inst_aic_cap1_texto) {
-            var c1P = aicCards[2].querySelector("p:last-of-type");
-            if (c1P) c1P.textContent = c.inst_aic_cap1_texto;
-          }
-          if (aicCards[3] && c.inst_aic_cap2_texto) {
-            var c2P = aicCards[3].querySelector("p:last-of-type");
-            if (c2P) c2P.textContent = c.inst_aic_cap2_texto;
-          }
-          if (aicCards[4] && c.inst_aic_cap3_texto) {
-            var c3P = aicCards[4].querySelector("p:last-of-type");
-            if (c3P) c3P.textContent = c.inst_aic_cap3_texto;
-          }
-          if (aicCards[5] && c.inst_aic_cap4_texto) {
-            var c4P = aicCards[5].querySelector("p:last-of-type");
-            if (c4P) c4P.textContent = c.inst_aic_cap4_texto;
-          }
-          if (aicCards[6] && c.inst_aic_cap5_texto) {
-            var c5P = aicCards[6].querySelector("p:last-of-type");
-            if (c5P) c5P.textContent = c.inst_aic_cap5_texto;
-          }
-          if (aicCards[7] && c.inst_aic_cic_texto) {
-            var cicP = aicCards[7].querySelector("p:last-of-type");
-            if (cicP) cicP.textContent = c.inst_aic_cic_texto;
+          setSummary(aicCards[2], c.inst_aic_cap1_texto);
+          setSummary(aicCards[3], c.inst_aic_cap2_texto);
+          setSummary(aicCards[4], c.inst_aic_cap3_texto);
+          setSummary(aicCards[5], c.inst_aic_cap4_texto);
+          setSummary(aicCards[6], c.inst_aic_cap5_texto);
+          setSummary(aicCards[7], c.inst_aic_cic_texto);
+
+          // PDF oficial del AIC, si el panel cargó uno.
+          var aicPdf = c.inst_aic_pdf_file || c.inst_aic_pdf_url;
+          if (aicPdf) {
+            var pdfHref = /^[a-z][a-z0-9+.-]*:/i.test(aicPdf) ? (isSafeUrl(aicPdf) ? aicPdf : "") : resolveImg(aicPdf);
+            if (pdfHref) {
+              var pdfLink = document.getElementById("aicPdfLink");
+              if (!pdfLink) {
+                pdfLink = document.createElement("a");
+                pdfLink.id = "aicPdfLink";
+                pdfLink.className = "btn btn-primary";
+                pdfLink.target = "_blank";
+                pdfLink.rel = "noopener noreferrer";
+                pdfLink.textContent = "Descargar el AIC completo (PDF)";
+                pdfLink.style.marginBottom = "20px";
+                paneAIC.insertBefore(pdfLink, paneAIC.firstChild);
+              }
+              pdfLink.href = pdfHref;
+            }
           }
         }
       }
@@ -469,7 +525,13 @@
       // ================= 4.8. HITOS HISTÓRICOS (PROYECTOS EMBLEMÁTICOS) =================
       if (c.hitos_tag) {
         var htTag = document.querySelector(".hitos-tag");
-        if (htTag) htTag.innerHTML = '<span class="hitos-tag-line"></span>' + c.hitos_tag;
+        if (htTag) {
+          htTag.textContent = "";
+          var tagLine = document.createElement("span");
+          tagLine.className = "hitos-tag-line";
+          htTag.appendChild(tagLine);
+          htTag.appendChild(document.createTextNode(c.hitos_tag));
+        }
       }
       if (c.hitos_titulo) {
         var htTitle = document.querySelector(".hitos-title");
@@ -480,45 +542,147 @@
         if (htSub) htSub.textContent = c.hitos_descripcion;
       }
 
-      if (data.hitos && data.hitos.length > 0) {
-        var hitoArticles = document.querySelectorAll(".hito-v2");
+      var hitoNodes = Array.prototype.slice.call(document.querySelectorAll(".hito-v2"));
+      if (hitoNodes.length > 0 && Array.isArray(data.hitos)) {
+        var hitoTemplate = hitoNodes[hitoNodes.length - 1];
+        var hitoParent = hitoTemplate.parentNode;
+
         data.hitos.forEach(function (hito, idx) {
-          if (idx < hitoArticles.length) {
-            var el = hitoArticles[idx];
-            if (hito.anio) {
-              var yr = el.querySelector(".hito-v2-year");
-              if (yr) yr.innerHTML = hito.anio.replace(/\s*[-–]\s*/g, "<br />");
+          var isNew = idx >= hitoNodes.length;
+          var el = hitoNodes[idx];
+          if (isNew) {
+            el = hitoTemplate.cloneNode(true);
+            var panelId = "hito-panel-db-" + hito.id;
+            el.id = "hito-db-" + hito.id;
+            el.className = "hito-v2 reveal is-visible";
+            var newRow = el.querySelector(".hito-v2-row");
+            var newPanel = el.querySelector(".hito-v2-card");
+            if (newRow) { newRow.setAttribute("aria-expanded", "false"); newRow.setAttribute("aria-controls", panelId); }
+            if (newPanel) { newPanel.id = panelId; newPanel.hidden = true; }
+            hitoParent.appendChild(el);
+            if (window.EESTBindHito) window.EESTBindHito(el);
+          }
+
+          var yr = el.querySelector(".hito-v2-year");
+          if (yr && hito.anio) {
+            yr.textContent = "";
+            String(hito.anio).split(/\s*[-–]\s*/).forEach(function (part, i) {
+              if (i) yr.appendChild(document.createElement("br"));
+              yr.appendChild(document.createTextNode(part));
+            });
+          }
+          var rTit = el.querySelector(".hito-v2-row-title");
+          if (rTit && (hito.titulo || isNew)) rTit.textContent = hito.titulo || "";
+          var cTit = el.querySelector(".hito-v2-card-title");
+          if (cTit && (hito.titulo || isNew)) cTit.textContent = hito.titulo || "";
+          var rSum = el.querySelector(".hito-v2-row-summary");
+          if (rSum && (hito.resumen || isNew)) rSum.textContent = hito.resumen || "";
+          var cDesc = el.querySelector(".hito-v2-card-desc");
+          if (cDesc && (hito.descripcion || isNew)) cDesc.textContent = hito.descripcion || "";
+
+          var thumb = el.querySelector(".hito-v2-thumb");
+          var cardFoto = el.querySelector(".hito-v2-card-foto");
+          var cardImg = cardFoto ? cardFoto.querySelector("img") : null;
+          if (hito.imagen) {
+            var hitoImg = resolveImg(hito.imagen);
+            if (thumb) { thumb.src = hitoImg; thumb.alt = hito.titulo || ""; }
+            if (cardImg) { cardImg.src = hitoImg; cardImg.alt = hito.titulo || ""; }
+          } else if (isNew) {
+            if (thumb) thumb.remove();
+            if (cardFoto) cardFoto.remove();
+          }
+          if (cardFoto && isNew) {
+            var figCap = cardFoto.querySelector("figcaption");
+            if (figCap) figCap.textContent = hito.titulo || "";
+          }
+
+          // Cada pastilla muestra su propio rótulo y su propio dato.
+          var pillData = [
+            ["ESPECIALIDAD", hito.especialidad],
+            ["DESTINO", hito.destino],
+            ["PREMIO", hito.premio]
+          ];
+          Array.prototype.forEach.call(el.querySelectorAll(".hito-v2-pill"), function (pill, i) {
+            var item = pillData[i];
+            if (!item) return;
+            var label = pill.querySelector(".hito-v2-pill-label");
+            var val = pill.querySelector(".hito-v2-pill-val");
+            if (item[1]) {
+              if (label) label.textContent = item[0];
+              if (val) val.textContent = item[1];
+              pill.hidden = false;
+            } else if (isNew) {
+              pill.hidden = true;
             }
-            if (hito.titulo) {
-              var rTit = el.querySelector(".hito-v2-row-title");
-              if (rTit) rTit.textContent = hito.titulo;
-              var cTit = el.querySelector(".hito-v2-card-title");
-              if (cTit) cTit.textContent = hito.titulo;
-            }
-            if (hito.resumen) {
-              var rSum = el.querySelector(".hito-v2-row-summary");
-              if (rSum) rSum.textContent = hito.resumen;
-            }
-            if (hito.descripcion) {
-              var cDesc = el.querySelector(".hito-v2-card-desc");
-              if (cDesc) cDesc.textContent = hito.descripcion;
-            }
-            if (hito.imagen) {
-              var thumb = el.querySelector(".hito-v2-thumb");
-              if (thumb) thumb.src = resolveImg(hito.imagen);
-              var cardImg = el.querySelector(".hito-v2-card-foto img");
-              if (cardImg) cardImg.src = resolveImg(hito.imagen);
-            }
-            if (hito.especialidad) {
-              var espVal = el.querySelector(".hito-v2-pill-val");
-              if (espVal) espVal.textContent = hito.especialidad;
-            }
-            if (hito.enlace) {
-              var actA = el.querySelector(".btn-hito-detalles");
-              if (actA) actA.href = hito.enlace;
+          });
+
+          var actA = el.querySelector(".btn-hito-detalles");
+          if (actA) {
+            if (hito.enlace && isSafeUrl(hito.enlace)) {
+              actA.href = hito.enlace;
+              actA.hidden = false;
+            } else if (isNew) {
+              actA.hidden = true;
+              actA.removeAttribute("href");
             }
           }
         });
+
+        hitoNodes.slice(data.hitos.length).forEach(function (el) { el.remove(); });
+      }
+
+      // ================= CATÁLOGO DE PROYECTOS (EXPOTEC) =================
+      var proyGrid = document.getElementById("proyectosGrid");
+      var proySection = document.getElementById("proyectosExpotec");
+      if (proyGrid && proySection && Array.isArray(data.proyectos)) {
+        proyGrid.textContent = "";
+        data.proyectos.forEach(function (proy) {
+          var card = document.createElement("article");
+          card.className = "expo-card proyecto-card";
+
+          if (proy.imagen) {
+            var pImg = document.createElement("img");
+            pImg.src = resolveImg(proy.imagen);
+            pImg.alt = proy.titulo || "";
+            pImg.loading = "lazy";
+            pImg.addEventListener("error", function () { pImg.remove(); });
+            card.appendChild(pImg);
+          }
+
+          var body = document.createElement("div");
+          body.className = "expo-card-body";
+
+          var meta = document.createElement("span");
+          meta.className = "proyecto-meta";
+          meta.textContent = [proy.especialidad_nombre, proy.anio].filter(Boolean).join(" · ");
+          body.appendChild(meta);
+
+          var pTitle = document.createElement("h3");
+          pTitle.textContent = proy.titulo || "";
+          body.appendChild(pTitle);
+
+          if (proy.subtitulo) {
+            var pSub = document.createElement("p");
+            pSub.className = "proyecto-subtitulo";
+            pSub.textContent = proy.subtitulo;
+            body.appendChild(pSub);
+          }
+
+          var pDesc = document.createElement("p");
+          pDesc.textContent = proy.descripcion || "";
+          body.appendChild(pDesc);
+
+          if (proy.estado) {
+            var pEstado = document.createElement("span");
+            pEstado.className = "proyecto-estado";
+            pEstado.textContent = proy.estado;
+            body.appendChild(pEstado);
+          }
+
+          card.appendChild(body);
+          proyGrid.appendChild(card);
+        });
+        proySection.hidden = data.proyectos.length === 0;
       }
 
       // ================= 5. CONTACTO Y FOOTER =================
@@ -545,18 +709,18 @@
             var label = rot.textContent.trim().toLowerCase();
             if (label.includes("direcci") && c.direccion) {
               var pDir = li.querySelectorAll("p")[1];
-              if (pDir) pDir.innerHTML = c.direccion.replace(/\n/g, "<br>");
+              if (pDir) setRichText(pDir, c.direccion);
             }
             if (label.includes("correo") && c.contacto_email) {
               var aMail = li.querySelector("a");
               if (aMail) {
                 aMail.textContent = c.contacto_email;
-                aMail.href = "mailto:" + c.contacto_email;
+                aMail.href = "mailto:" + encodeURIComponent(c.contacto_email).replace(/%40/g, "@");
               }
             }
             if (label.includes("atenci") && c.contacto_horarios) {
               var pAten = li.querySelectorAll("p")[1];
-              if (pAten) pAten.innerHTML = c.contacto_horarios.replace(/\n/g, "<br>");
+              if (pAten) setRichText(pAten, c.contacto_horarios);
             }
           });
         }
@@ -568,7 +732,7 @@
 
         if (c.contacto_mapa_url) {
           var mapIframe = document.querySelector(".section.contacto .map iframe");
-          if (mapIframe) mapIframe.src = c.contacto_mapa_url;
+          if (mapIframe && /^https:\/\//i.test(c.contacto_mapa_url)) mapIframe.src = c.contacto_mapa_url;
         }
         if (c.contacto_mapa_nota) {
           var mapNota = document.querySelector(".section.contacto .map .nota");
@@ -605,14 +769,15 @@
       }
       if (c.instagram_url) {
         var igLinks = document.querySelectorAll("a[href*='instagram.com'], a[aria-label='Instagram']");
-        igLinks.forEach(function (el) { el.href = c.instagram_url; });
+        if (isSafeUrl(c.instagram_url)) igLinks.forEach(function (el) { el.href = c.instagram_url; });
       }
       if (c.facebook_url) {
         var fbLinks = document.querySelectorAll("a[href*='facebook.com'], a[aria-label='Facebook']");
-        fbLinks.forEach(function (el) { el.href = c.facebook_url; });
+        if (isSafeUrl(c.facebook_url)) fbLinks.forEach(function (el) { el.href = c.facebook_url; });
       }
     })
     .catch(function (err) {
       console.log("Modo estático activo o sin conexión a backend PHP:", err);
+      requestBehold();
     });
 })();

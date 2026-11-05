@@ -1,14 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -62,10 +54,7 @@ try {
     $pdo = getPublicDB();
 
     // 3. Control de tasa de envíos (Rate Limiting por IP: máx 5 mensajes cada 15 min)
-    $ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-    if (strpos($ip, ',') !== false) {
-        $ip = trim(explode(',', $ip)[0]);
-    }
+    $ip = appClientIP();
 
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS `rate_limit_contacto` (
@@ -94,7 +83,9 @@ try {
         } else {
             $pdo->prepare("INSERT INTO rate_limit_contacto (ip, intentos, primera_peticion) VALUES (?, 1, ?)")->execute([$ip, $ahora]);
         }
-    } catch (Exception $eRL) {}
+    } catch (Exception $eRL) {
+        error_log('contact rate limit: ' . $eRL->getMessage());
+    }
 
     // Crear tabla si aún no existe
     $pdo->exec("CREATE TABLE IF NOT EXISTS `mensajes_contacto` (
@@ -110,38 +101,45 @@ try {
     $stmt = $pdo->prepare("INSERT INTO `mensajes_contacto` (`nombre`, `email`, `asunto`, `mensaje`) VALUES (?, ?, ?, ?)");
     $stmt->execute([$nombre, $email, $asunto, $mensaje]);
 
-    // Intento de envío vía PHP mail() si está soportado en el servidor
-    $destinatario = 'infot5@eest5mdp.edu.ar';
-    try {
-        $stmtMail = $pdo->query("SELECT valor FROM contenido_institucional WHERE clave = 'contacto_email' LIMIT 1");
-        $dbMail = $stmtMail ? $stmtMail->fetchColumn() : null;
-        if (!empty($dbMail) && filter_var($dbMail, FILTER_VALIDATE_EMAIL)) {
-            $destinatario = trim($dbMail);
+    // El correo normalmente lo envía FormSubmit desde el navegador. mail() es opcional:
+    // activarlo junto con FormSubmit haría llegar cada consulta dos veces.
+    if (getenv('CONTACT_USE_PHP_MAIL') === '1') {
+        $destinatario = 'infot5@eest5mdp.edu.ar';
+        try {
+            $stmtMail = $pdo->query("SELECT valor FROM contenido_institucional WHERE clave = 'contacto_email' LIMIT 1");
+            $dbMail = $stmtMail ? $stmtMail->fetchColumn() : null;
+            if (!empty($dbMail) && filter_var($dbMail, FILTER_VALIDATE_EMAIL)) {
+                $destinatario = trim($dbMail);
+            }
+        } catch (Exception $em) {
+            error_log('contact destinatario: ' . $em->getMessage());
         }
-    } catch (Exception $em) {}
-    $mailAsunto = "Nuevo mensaje web E.E.S.T. N.º 5: " . $asunto . " (" . $nombre . ")";
-    $mailBody = "Se ha recibido una nueva consulta desde la página web oficial:\n\n"
-              . "Nombre: $nombre\n"
-              . "Correo: $email\n"
-              . "Asunto: $asunto\n"
-              . "Fecha: " . date('Y-m-d H:i:s') . "\n\n"
-              . "Mensaje:\n$mensaje\n\n"
-              . "--------------------------------------------------\n"
-              . "Podés responder directamente a este correo para contestarle a $nombre.";
-    $headers = "From: web@eest5mdp.edu.ar\r\n"
-             . "Reply-To: $email\r\n"
-             . "X-Mailer: PHP/" . phpversion();
+        $limpio = function ($texto) { return str_replace(["\r", "\n"], ' ', $texto); };
+        $mailAsunto = "Nuevo mensaje web E.E.S.T. N.º 5: " . $limpio($asunto) . " (" . $limpio($nombre) . ")";
+        $mailBody = "Se ha recibido una nueva consulta desde la página web oficial:\n\n"
+                  . "Nombre: $nombre\n"
+                  . "Correo: $email\n"
+                  . "Asunto: $asunto\n"
+                  . "Fecha: " . date('Y-m-d H:i:s') . "\n\n"
+                  . "Mensaje:\n$mensaje\n\n"
+                  . "--------------------------------------------------\n"
+                  . "Podés responder directamente a este correo para contestarle a $nombre.";
+        $headers = "From: web@eest5mdp.edu.ar\r\n"
+                 . "Reply-To: $email\r\n"
+                 . "X-Mailer: PHP/" . phpversion();
 
-    @mail($destinatario, $mailAsunto, $mailBody, $headers);
+        @mail($destinatario, $mailAsunto, $mailBody, $headers);
+    }
 
     echo json_encode([
         'success' => true,
         'message' => 'Mensaje recibido y registrado correctamente'
     ]);
 } catch (Exception $e) {
+    error_log('contact.php: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => 'No se pudo guardar la consulta: ' . $e->getMessage()
+        'error' => 'No se pudo guardar la consulta.'
     ]);
 }

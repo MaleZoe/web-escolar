@@ -4,9 +4,8 @@ ini_set('display_errors', '0');
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../config.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Error con un mensaje pensado para mostrarle al administrador.
+class UserFacingError extends RuntimeException {}
 
 if (empty($_SESSION['admin_user'])) {
     http_response_code(401);
@@ -15,8 +14,7 @@ if (empty($_SESSION['admin_user'])) {
 }
 
 // Timeout por inactividad de 30 minutos
-$timeout = 1800;
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
     $_SESSION = [];
     if (ini_get("session.use_cookies")) {
         $params = session_get_cookie_params();
@@ -32,8 +30,15 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 }
 $_SESSION['last_activity'] = time();
 
-// Verificación CSRF reforzada para todas las operaciones mutantes (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Si el cuerpo supera post_max_size, PHP vacía $_POST y parecería un fallo de CSRF.
+    if (empty($_POST) && empty($_FILES) && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0
+        && stripos($_SERVER['CONTENT_TYPE'] ?? '', 'multipart/form-data') !== false) {
+        http_response_code(413);
+        echo json_encode(['success' => false, 'error' => 'El archivo es demasiado grande para el servidor.']);
+        exit;
+    }
+
     $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     if (!verifyCSRFToken($token)) {
         http_response_code(403);
@@ -45,15 +50,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $pdo = getDB();
 
-// Función de subida segura y multiplataforma con validación estricta de MIME y tamaño
+// Lee un texto de $_POST validando obligatoriedad y largo máximo.
+function postText(string $name, string $label, int $max, bool $required = false, string $default = ''): string {
+    $value = $_POST[$name] ?? $default;
+    if (!is_string($value)) {
+        throw new UserFacingError("El campo \"$label\" no es válido.");
+    }
+    $value = trim($value);
+    if ($required && $value === '') {
+        throw new UserFacingError("El campo \"$label\" es obligatorio.");
+    }
+    if (mb_strlen($value) > $max) {
+        throw new UserFacingError("El campo \"$label\" supera los $max caracteres.");
+    }
+    return $value;
+}
+
+// Referencia a una imagen: nombre de archivo simple o URL http(s).
+function validImageRef(string $value): string {
+    if ($value === '' || preg_match('/^[A-Za-z0-9._ -]+$/', $value) || preg_match('#^https?://#i', $value)) {
+        return $value;
+    }
+    throw new UserFacingError('El nombre de archivo de la imagen no es válido.');
+}
+
+function validExternalUrl(string $value): string {
+    if ($value === '') {
+        return '';
+    }
+    if (filter_var($value, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $value)) {
+        return $value;
+    }
+    throw new UserFacingError('El enlace debe ser una dirección http:// o https:// válida.');
+}
+
+function requireId(): int {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        throw new UserFacingError('Identificador no válido.');
+    }
+    return $id;
+}
+
+function insertUploadedFile(PDO $db, string $name, string $mime, string $data): void {
+    $stmt = $db->prepare("INSERT INTO archivos_subidos (nombre, mime, datos) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE mime = VALUES(mime), datos = VALUES(datos)");
+    $stmt->execute([$name, $mime, $data]);
+}
+
+// Valida y guarda un archivo. Devuelve null si no se eligió ninguno.
+// Un archivo rechazado detiene la operación: el administrador tiene que enterarse.
 function saveUploadedFile($file, $prefix = 'img') {
-    if (empty($file['name']) || $file['error'] !== UPLOAD_ERR_OK) {
+    if (!is_array($file) || !is_string($file['name'] ?? null) || $file['name'] === '' || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
         return null;
     }
 
-    // Tamaño máximo: 12MB
-    if ($file['size'] > 12 * 1024 * 1024) {
-        return null;
+    $maxBytes = appMaxUploadBytes();
+    $maxMb = (int)round($maxBytes / 1048576);
+    $displayName = basename($file['name']);
+
+    if (in_array($file['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || $file['size'] > $maxBytes) {
+        throw new UserFacingError("\"$displayName\" supera el máximo de $maxMb MB.");
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new UserFacingError("No se pudo recibir \"$displayName\". Volvé a intentarlo.");
     }
 
     $allowed = [
@@ -62,42 +121,44 @@ function saveUploadedFile($file, $prefix = 'img') {
         'png'  => ['image/png'],
         'webp' => ['image/webp'],
         'gif'  => ['image/gif'],
-        'mp4'  => ['video/mp4'],
+        'mp4'  => ['video/mp4', 'application/mp4'],
         'webm' => ['video/webm'],
         'pdf'  => ['application/pdf']
     ];
 
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     if (!array_key_exists($ext, $allowed)) {
-        return null;
+        throw new UserFacingError("El tipo de archivo de \"$displayName\" no está permitido.");
     }
 
-    // Validación del tipo MIME real en el servidor mediante finfo (magic bytes)
+    // Tipo real según los bytes del archivo. Si no se puede comprobar, no se acepta.
     $realMime = '';
     if (function_exists('finfo_open')) {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $realMime = finfo_file($finfo, $file['tmp_name']);
+        $realMime = (string)finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
     } elseif (function_exists('mime_content_type')) {
-        $realMime = mime_content_type($file['tmp_name']);
+        $realMime = (string)mime_content_type($file['tmp_name']);
+    }
+    if ($realMime === '') {
+        throw new UserFacingError('El servidor no puede verificar el tipo de archivo.');
+    }
+    if (!in_array($realMime, $allowed[$ext], true)) {
+        throw new UserFacingError("\"$displayName\" no es realmente un archivo .$ext.");
     }
 
-    if (!empty($realMime) && !in_array($realMime, $allowed[$ext], true)) {
-        return null;
-    }
-
-    $mime = !empty($realMime) ? $realMime : ($allowed[$ext][0] ?? 'application/octet-stream');
     $newFileName = $prefix . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
     $fileData = file_get_contents($file['tmp_name']);
     if ($fileData === false) {
-        return null;
+        throw new UserFacingError("No se pudo leer \"$displayName\".");
     }
 
-    // 1. Guardar en TiDB Cloud / MySQL (archivos_subidos)
+    // Base de datos: es lo único que persiste en serverless.
+    $db = getDB();
+    $savedInDb = false;
     try {
-        $db = getDB();
-        $stmt = $db->prepare("INSERT INTO archivos_subidos (nombre, mime, datos) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE mime = ?, datos = ?");
-        $stmt->execute([$newFileName, $mime, $fileData, $mime, $fileData]);
+        insertUploadedFile($db, $newFileName, $realMime, $fileData);
+        $savedInDb = true;
     } catch (Exception $e) {
         try {
             $db->exec("CREATE TABLE IF NOT EXISTS `archivos_subidos` (
@@ -107,15 +168,22 @@ function saveUploadedFile($file, $prefix = 'img') {
               `fecha` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               PRIMARY KEY (`nombre`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-            $stmt = $db->prepare("INSERT INTO archivos_subidos (nombre, mime, datos) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE mime = ?, datos = ?");
-            $stmt->execute([$newFileName, $mime, $fileData, $mime, $fileData]);
-        } catch (Exception $e2) {}
+            insertUploadedFile($db, $newFileName, $realMime, $fileData);
+            $savedInDb = true;
+        } catch (Exception $e2) {
+            error_log('saveUploadedFile: ' . $e2->getMessage());
+        }
     }
 
-    // 2. Si el sistema de archivos local es escribible (XAMPP / Servidor dedicado), guardar también en disco
+    // Disco: solo donde es escribible (XAMPP / servidor dedicado).
+    $savedOnDisk = false;
     $targetDir = __DIR__ . '/../../img';
     if (is_dir($targetDir) && is_writable($targetDir)) {
-        @file_put_contents($targetDir . '/' . $newFileName, $fileData);
+        $savedOnDisk = @file_put_contents($targetDir . '/' . $newFileName, $fileData) !== false;
+    }
+
+    if (!$savedInDb && !$savedOnDisk) {
+        throw new UserFacingError("No se pudo guardar \"$displayName\". Probá con un archivo más liviano.");
     }
 
     return $newFileName;
@@ -123,16 +191,14 @@ function saveUploadedFile($file, $prefix = 'img') {
 
 try {
     switch ($action) {
-        // --- GUARDAR TEXTOS E IMÁGENES INSTITUCIONALES ---
+        // --- TEXTOS E IMÁGENES INSTITUCIONALES ---
+        // La base de datos es la única fuente de verdad: las páginas públicas la leen por la API.
         case 'save_content':
             $data = $_POST['content'] ?? [];
             if (!is_array($data)) {
-                $raw = file_get_contents('php://input');
-                $json = json_decode($raw, true);
-                $data = $json['content'] ?? [];
+                throw new UserFacingError('Contenido no válido.');
             }
 
-            // Procesar archivos de imagen, video o documentos subidos en formularios multipart
             if (!empty($_FILES)) {
                 foreach ($_FILES as $key => $file) {
                     $saved = saveUploadedFile($file, 'sec_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $key));
@@ -142,286 +208,35 @@ try {
                 }
             }
 
-            $stmt = $pdo->prepare("INSERT INTO contenido_institucional (clave, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = ?");
             foreach ($data as $clave => $valor) {
-                $stmt->execute([$clave, $valor, $valor]);
+                if (!is_string($clave) || !preg_match('/^[a-z][a-z0-9_]{0,99}$/', $clave) || !is_string($valor)) {
+                    throw new UserFacingError('Se recibió un campo de contenido no válido.');
+                }
             }
 
-            // Sincronización estática opcional en disco (solo si es escribible, ej: local XAMPP)
-            // 1. ExpoTec (pages/expotec.html)
-            $expotecPath = __DIR__ . '/../../pages/expotec.html';
-            if (file_exists($expotecPath) && is_writable($expotecPath)) {
-                $expoHtml = file_get_contents($expotecPath);
-                if (!empty($data['expotec_tag'])) {
-                    $expoHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<p class="section-tag[^>]*>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['expotec_tag']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_titulo'])) {
-                    $expoHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<h1 class="page-title">)(.*?)(<\/h1>)/s', '$1' . htmlspecialchars($data['expotec_titulo']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_desc'])) {
-                    $expoHtml = preg_replace('/(<div class="shell expo-intro">[\s\S]*?<p class="lead">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['expotec_desc']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_desc_secundaria'])) {
-                    $expoHtml = preg_replace('/(<div class="shell expo-intro">[\s\S]*?<p class="body">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['expotec_desc_secundaria']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_frecuencia'])) {
-                    $expoHtml = preg_replace('/(<li><span>Frecuencia<\/span><p>)(.*?)(<\/p><\/li>)/s', '$1' . htmlspecialchars($data['expotec_frecuencia']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_participan'])) {
-                    $expoHtml = preg_replace('/(<li><span>Participan<\/span><p>)(.*?)(<\/p><\/li>)/s', '$1' . htmlspecialchars($data['expotec_participan']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_abierta'])) {
-                    $expoHtml = preg_replace('/(<li><span>Abierta a<\/span><p>)(.*?)(<\/p><\/li>)/s', '$1' . htmlspecialchars($data['expotec_abierta']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_sede'])) {
-                    $expoHtml = preg_replace('/(<li><span>Sede<\/span><p>)(.*?)(<\/p><\/li>)/s', '$1' . htmlspecialchars($data['expotec_sede']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_sectores_tag'])) {
-                    $expoHtml = preg_replace('/(<section class="section especialidades">[\s\S]*?<p class="section-tag[^>]*>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['expotec_sectores_tag']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_sectores_titulo'])) {
-                    $expoHtml = preg_replace('/(<section class="section especialidades">[\s\S]*?<h2 class="h2[^>]*>)(.*?)(<\/h2>)/s', '$1' . htmlspecialchars($data['expotec_sectores_titulo']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_s1_img'])) {
-                    $expoHtml = preg_replace('/(<article class="expo-card[^>]*>\s*<img src=")[^"]*("[\s\S]*?<span class="expo-num">01<\/span>)/s', '$1../img/' . $data['expotec_s1_img'] . '$2', $expoHtml);
-                }
-                if (!empty($data['expotec_s1_titulo'])) {
-                    $expoHtml = preg_replace('/(<article class="expo-card[^>]*>[\s\S]*?<span class="expo-num">01<\/span>\s*<h3>)(.*?)(<\/h3>)/s', '$1' . htmlspecialchars($data['expotec_s1_titulo']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_s1_desc'])) {
-                    $expoHtml = preg_replace('/(<article class="expo-card[^>]*>[\s\S]*?<span class="expo-num">01<\/span>[\s\S]*?<h3>.*?<\/h3>\s*<p>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['expotec_s1_desc']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_s2_img'])) {
-                    $expoHtml = preg_replace('/(<article class="expo-card[^>]*>\s*<img src=")[^"]*("[\s\S]*?<span class="expo-num">02<\/span>)/s', '$1../img/' . $data['expotec_s2_img'] . '$2', $expoHtml);
-                }
-                if (!empty($data['expotec_s2_titulo'])) {
-                    $expoHtml = preg_replace('/(<article class="expo-card[^>]*>[\s\S]*?<span class="expo-num">02<\/span>\s*<h3>)(.*?)(<\/h3>)/s', '$1' . htmlspecialchars($data['expotec_s2_titulo']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_s2_desc'])) {
-                    $expoHtml = preg_replace('/(<article class="expo-card[^>]*>[\s\S]*?<span class="expo-num">02<\/span>[\s\S]*?<h3>.*?<\/h3>\s*<p>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['expotec_s2_desc']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_s3_img'])) {
-                    $expoHtml = preg_replace('/(<article class="expo-card[^>]*>\s*<img src=")[^"]*("[\s\S]*?<span class="expo-num">03<\/span>)/s', '$1../img/' . $data['expotec_s3_img'] . '$2', $expoHtml);
-                }
-                if (!empty($data['expotec_s3_titulo'])) {
-                    $expoHtml = preg_replace('/(<article class="expo-card[^>]*>[\s\S]*?<span class="expo-num">03<\/span>\s*<h3>)(.*?)(<\/h3>)/s', '$1' . htmlspecialchars($data['expotec_s3_titulo']) . '$3', $expoHtml);
-                }
-                if (!empty($data['expotec_s3_desc'])) {
-                    $expoHtml = preg_replace('/(<article class="expo-card[^>]*>[\s\S]*?<span class="expo-num">03<\/span>[\s\S]*?<h3>.*?<\/h3>\s*<p>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['expotec_s3_desc']) . '$3', $expoHtml);
-                }
-                @file_put_contents($expotecPath, $expoHtml);
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare("INSERT INTO contenido_institucional (clave, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)");
+            foreach ($data as $clave => $valor) {
+                $stmt->execute([$clave, $valor]);
             }
-
-            // 2. La Escuela (pages/escuela.html)
-            $escuelaPath = __DIR__ . '/../../pages/escuela.html';
-            if (file_exists($escuelaPath) && is_writable($escuelaPath)) {
-                $escHtml = file_get_contents($escuelaPath);
-                if (!empty($data['escuela_hero_tag'])) {
-                    $escHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<p class="section-tag[^>]*>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['escuela_hero_tag']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_hero_titulo'])) {
-                    $escHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<h1 class="page-title">)(.*?)(<\/h1>)/s', '$1' . htmlspecialchars($data['escuela_hero_titulo']) . '$3', $escHtml);
-                }
-                if (!empty($data['sobre_nosotros'])) {
-                    $escHtml = preg_replace('/(<div class="escuela-copy[^>]*>\s*<p class="lead">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['sobre_nosotros']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_egresado_desc'])) {
-                    $escHtml = preg_replace('/(<div class="escuela-copy[^>]*>[\s\S]*?<p class="lead">[\s\S]*?<\/p>\s*<p class="body">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['escuela_egresado_desc']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_nivel'])) {
-                    $escHtml = preg_replace('/(<dt>Nivel<\/dt><dd>)(.*?)(<\/dd>)/s', '$1' . htmlspecialchars($data['escuela_nivel']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_gestion'])) {
-                    $escHtml = preg_replace('/(<dt>Gestión<\/dt><dd>)(.*?)(<\/dd>)/s', '$1' . htmlspecialchars($data['escuela_gestion']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_titulo'])) {
-                    $escHtml = preg_replace('/(<dt>Título<\/dt><dd>)(.*?)(<\/dd>)/s', '$1' . htmlspecialchars($data['escuela_titulo']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_ciudad'])) {
-                    $escHtml = preg_replace('/(<dt>Ciudad<\/dt><dd>)(.*?)(<\/dd>)/s', '$1' . htmlspecialchars($data['escuela_ciudad']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_foto_fachada'])) {
-                    $escHtml = preg_replace('/(<figure class="escuela-foto[^>]*>\s*<img src=")[^"]*(")/s', '$1../img/' . $data['escuela_foto_fachada'] . '$2', $escHtml);
-                }
-                if (!empty($data['escuela_foto_caption'])) {
-                    $escHtml = preg_replace('/(<figcaption><span class="dot" aria-hidden="true"><\/span>)(.*?)(<\/figcaption>)/s', '$1' . htmlspecialchars($data['escuela_foto_caption']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_taller_tag'])) {
-                    $escHtml = preg_replace('/(<div class="taller-panel[^>]*>\s*<p class="section-tag">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['escuela_taller_tag']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_taller_titulo'])) {
-                    $escHtml = preg_replace('/(<div class="taller-panel[^>]*>[\s\S]*?<h2 class="h2">)(.*?)(<\/h2>)/s', '$1' . htmlspecialchars($data['escuela_taller_titulo']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_taller_desc'])) {
-                    $escHtml = preg_replace('/(<div class="taller-panel[^>]*>[\s\S]*?<p class="body">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['escuela_taller_desc']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_foto_taller'])) {
-                    $escHtml = preg_replace('/(<div class="taller-media[^>]*>\s*<img src=")[^"]*(")/s', '$1../img/' . $data['escuela_foto_taller'] . '$2', $escHtml);
-                }
-                if (!empty($data['escuela_paso_1'])) {
-                    $escHtml = preg_replace('/(<li><span>01<\/span><p>)(.*?)(<\/p><\/li>)/s', '$1' . htmlspecialchars($data['escuela_paso_1']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_paso_2'])) {
-                    $escHtml = preg_replace('/(<li><span>02<\/span><p>)(.*?)(<\/p><\/li>)/s', '$1' . htmlspecialchars($data['escuela_paso_2']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_paso_3'])) {
-                    $escHtml = preg_replace('/(<li><span>03<\/span><p>)(.*?)(<\/p><\/li>)/s', '$1' . htmlspecialchars($data['escuela_paso_3']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_paso_4'])) {
-                    $escHtml = preg_replace('/(<li><span>04<\/span><p>)(.*?)(<\/p><\/li>)/s', '$1' . htmlspecialchars($data['escuela_paso_4']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_dir_nombre'])) {
-                    $escHtml = preg_replace('/(<h3 class="auth-director-name">)(.*?)(<\/h3>)/s', '$1' . htmlspecialchars($data['escuela_dir_nombre']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_dir_cargo'])) {
-                    $escHtml = preg_replace('/(<p class="auth-director-role">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['escuela_dir_cargo']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_sec_tm'])) {
-                    $escHtml = preg_replace('/(<span class="auth-turno-label">Turno Mañana<\/span>\s*<h4 class="auth-person-name">)(.*?)(<\/h4>\s*<span class="auth-person-sub">Secretaria<\/span>)/s', '$1' . htmlspecialchars($data['escuela_sec_tm']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_sec_tt'])) {
-                    $escHtml = preg_replace('/(<span class="auth-turno-label">Turno Tarde<\/span>\s*<h4 class="auth-person-name">)(.*?)(<\/h4>\s*<span class="auth-person-sub">Secretario<\/span>)/s', '$1' . htmlspecialchars($data['escuela_sec_tt']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_prosec'])) {
-                    $escHtml = preg_replace('/(<span class="auth-turno-label">Prosecretaría<\/span>\s*<h4 class="auth-person-name">)(.*?)(<\/h4>\s*<span class="auth-person-sub">Prosecretaria<\/span>)/s', '$1' . htmlspecialchars($data['escuela_prosec']) . '$3', $escHtml);
-                }
-                if (!empty($data['escuela_qr_ra_url'])) {
-                    $escHtml = preg_replace('/(href=")[^"]*(" class="btn btn-primary btn-sm">\s*Ver Régimen Académico)/s', '$1' . htmlspecialchars($data['escuela_qr_ra_url']) . '$2', $escHtml);
-                }
-                if (!empty($data['escuela_qr_aic_url'])) {
-                    $escHtml = preg_replace('/(href=")[^"]*(" class="btn btn-primary btn-sm">\s*Ver Acuerdo de Convivencia)/s', '$1' . htmlspecialchars($data['escuela_qr_aic_url']) . '$2', $escHtml);
-                }
-                @file_put_contents($escuelaPath, $escHtml);
-            }
-
-            // 3. Portada (index.html)
-            $indexPath = __DIR__ . '/../../index.html';
-            if (file_exists($indexPath) && is_writable($indexPath)) {
-                $indexHtml = file_get_contents($indexPath);
-                if (!empty($data['hero_titulo'])) {
-                    $indexHtml = preg_replace('/(<h1 class="hero-title">)(.*?)(<\/h1>)/s', '$1' . nl2br(htmlspecialchars($data['hero_titulo'])) . '$3', $indexHtml);
-                }
-                if (!empty($data['hero_foto'])) {
-                    $indexHtml = preg_replace('/(<div class="hero-media[^>]*>\s*<img src=")[^"]*(")/s', '$1img/' . $data['hero_foto'] . '$2', $indexHtml);
-                }
-                if (!empty($data['hero_slogan'])) {
-                    $indexHtml = preg_replace('/(<p class="hero-slogan">)(.*?)(<\/p>)/s', '$1' . $data['hero_slogan'] . '$3', $indexHtml);
-                }
-                if (!empty($data['hero_subtitulo'])) {
-                    $indexHtml = preg_replace('/(<p class="hero-sub">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['hero_subtitulo']) . '$3', $indexHtml);
-                }
-                if (!empty($data['anuncios_titulo'])) {
-                    $indexHtml = preg_replace('/(<section class="section anuncios[^>]*>[\s\S]*?<h2 class="h2">)(.*?)(<\/h2>)/s', '$1' . htmlspecialchars($data['anuncios_titulo']) . '$3', $indexHtml);
-                }
-                if (!empty($data['anuncios_subtitulo'])) {
-                    $indexHtml = preg_replace('/(<section class="section anuncios[^>]*>[\s\S]*?<p class="anuncios-sub">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['anuncios_subtitulo']) . '$3', $indexHtml);
-                }
-                if (!empty($data['especialidades_tagline'])) {
-                    $indexHtml = preg_replace('/(<section class="section especialidades[^>]*>[\s\S]*?<h2 class="h2 light">)(.*?)(<\/h2>)/s', '$1' . htmlspecialchars($data['especialidades_tagline']) . '$3', $indexHtml);
-                }
-                if (!empty($data['hitos_titulo'])) {
-                    $indexHtml = preg_replace('/(<h2 class="hitos-title">)(.*?)(<\/h2>)/s', '$1' . htmlspecialchars($data['hitos_titulo']) . '$3', $indexHtml);
-                }
-                if (!empty($data['hitos_descripcion'])) {
-                    $indexHtml = preg_replace('/(<p class="hitos-sub">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['hitos_descripcion']) . '$3', $indexHtml);
-                }
-                if (!empty($data['direccion']) || !empty($data['contacto_email'])) {
-                    $dir = $data['direccion'] ?? 'Juan B. Justo 4287';
-                    $em = $data['contacto_email'] ?? 'infot5@eest5mdp.edu.ar';
-                    $indexHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $em) . '$3', $indexHtml);
-                }
-                @file_put_contents($indexPath, $indexHtml);
-            }
-
-            // 4. Contacto (pages/contacto.html)
-            $contactoPath = __DIR__ . '/../../pages/contacto.html';
-            if (file_exists($contactoPath) && is_writable($contactoPath)) {
-                $conHtml = file_get_contents($contactoPath);
-                if (!empty($data['contacto_hero_tag'])) {
-                    $conHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<p class="section-tag[^>]*>)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['contacto_hero_tag']) . '$3', $conHtml);
-                }
-                if (!empty($data['contacto_hero_titulo'])) {
-                    $conHtml = preg_replace('/(<section class="page-hero">[\s\S]*?<h1 class="page-title">)(.*?)(<\/h1>)/s', '$1' . htmlspecialchars($data['contacto_hero_titulo']) . '$3', $conHtml);
-                }
-                if (!empty($data['contacto_seccion_titulo'])) {
-                    $conHtml = preg_replace('/(<div class="reveal">[\s\S]*?<h2 class="h2">)(.*?)(<\/h2>)/s', '$1' . htmlspecialchars($data['contacto_seccion_titulo']) . '$3', $conHtml);
-                }
-                if (!empty($data['direccion'])) {
-                    $conHtml = preg_replace('/(<p class="rot">Dirección<\/p>\s*<p>)(.*?)(<\/p>)/s', '$1' . nl2br(htmlspecialchars($data['direccion'])) . '$3', $conHtml);
-                }
-                if (!empty($data['contacto_email'])) {
-                    $conHtml = preg_replace('/(<p class="rot">Correo<\/p>\s*<p><a href="mailto:)[^"]*(">\s*)(.*?)(<\/a><\/p>)/s', '$1' . htmlspecialchars($data['contacto_email']) . '$2' . htmlspecialchars($data['contacto_email']) . '$4', $conHtml);
-                    $conHtml = preg_replace('/(href="mailto:)[^"]*(" class="footer-icon-btn" aria-label="Email")/s', '$1' . htmlspecialchars($data['contacto_email']) . '$2', $conHtml);
-                }
-                if (!empty($data['contacto_horarios'])) {
-                    $conHtml = preg_replace('/(<p class="rot">Atención<\/p>\s*<p>)(.*?)(<\/p>)/s', '$1' . nl2br(htmlspecialchars($data['contacto_horarios'])) . '$3', $conHtml);
-                }
-                if (!empty($data['contacto_nota'])) {
-                    $conHtml = preg_replace('/(<p class="nota">)(.*?)(<\/p>\s*<div class="contacto-cta-actions">)/s', '$1' . htmlspecialchars($data['contacto_nota']) . '$3', $conHtml);
-                }
-                if (!empty($data['contacto_mapa_url'])) {
-                    $conHtml = preg_replace('/(<iframe[^>]*?src=")[^"]*(")/s', '$1' . htmlspecialchars($data['contacto_mapa_url']) . '$2', $conHtml);
-                }
-                if (!empty($data['contacto_mapa_nota'])) {
-                    $conHtml = preg_replace('/(<div class="map[^"]*">[\s\S]*?<p class="nota">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($data['contacto_mapa_nota']) . '$3', $conHtml);
-                }
-                if (!empty($data['instagram_url'])) {
-                    $conHtml = preg_replace('/(href=")[^"]*(" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Instagram")/s', '$1' . htmlspecialchars($data['instagram_url']) . '$2', $conHtml);
-                }
-                if (!empty($data['facebook_url'])) {
-                    $conHtml = preg_replace('/(href=")[^"]*(" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Facebook")/s', '$1' . htmlspecialchars($data['facebook_url']) . '$2', $conHtml);
-                }
-                if (!empty($data['direccion']) || !empty($data['contacto_email'])) {
-                    $dirParts = explode("\n", $data['direccion'] ?? 'Juan B. Justo 4287');
-                    $dir = trim($dirParts[0]);
-                    $em = $data['contacto_email'] ?? 'infot5@eest5mdp.edu.ar';
-                    $conHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $em) . '$3', $conHtml);
-                }
-                @file_put_contents($contactoPath, $conHtml);
-            }
-
-            // Sincronizar footer en páginas restantes si hay cambios institucionales
-            $otherPages = [
-                __DIR__ . '/../../pages/escuela.html',
-                __DIR__ . '/../../pages/expotec.html',
-                __DIR__ . '/../../pages/institucionales.html'
-            ];
-            foreach ($otherPages as $oPath) {
-                if (file_exists($oPath) && is_writable($oPath)) {
-                    $oHtml = file_get_contents($oPath);
-                    if (!empty($data['direccion']) || !empty($data['contacto_email'])) {
-                        $dirParts = explode("\n", $data['direccion'] ?? 'Juan B. Justo 4287');
-                        $dir = trim($dirParts[0]);
-                        $em = $data['contacto_email'] ?? 'infot5@eest5mdp.edu.ar';
-                        $oHtml = preg_replace('/(<p class="footer-info">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($dir . ' · ' . $em) . '$3', $oHtml);
-                    }
-                    if (!empty($data['instagram_url'])) {
-                        $oHtml = preg_replace('/(href=")[^"]*(" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Instagram")/s', '$1' . htmlspecialchars($data['instagram_url']) . '$2', $oHtml);
-                    }
-                    if (!empty($data['facebook_url'])) {
-                        $oHtml = preg_replace('/(href=")[^"]*(" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Facebook")/s', '$1' . htmlspecialchars($data['facebook_url']) . '$2', $oHtml);
-                    }
-                    if (!empty($data['contacto_email'])) {
-                        $oHtml = preg_replace('/(href="mailto:)[^"]*(" class="footer-icon-btn" aria-label="Email")/s', '$1' . htmlspecialchars($data['contacto_email']) . '$2', $oHtml);
-                    }
-                    @file_put_contents($oPath, $oHtml);
-                }
-            }
+            $pdo->commit();
 
             echo json_encode(['success' => true, 'message' => 'Contenido actualizado correctamente', 'data' => $data]);
             break;
 
         // --- ESPECIALIDADES ---
         case 'save_especialidad':
-            $id = !empty($_POST['id']) ? intval($_POST['id']) : null;
-            $nombre = trim($_POST['nombre'] ?? '');
-            $titulo = trim($_POST['titulo'] ?? '');
-            $descripcion = trim($_POST['descripcion'] ?? '');
-            $icono = trim($_POST['icono'] ?? 'hammer');
-            $duracion = intval($_POST['duracion_anios'] ?? 7);
-            $imagen = trim($_POST['imagen'] ?? '');
+            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+            $nombre = postText('nombre', 'Nombre', 100, true);
+            $titulo = postText('titulo', 'Título', 150);
+            $descripcion = postText('descripcion', 'Descripción', 65000, true);
+            $icono = postText('icono', 'Icono', 50, false, 'hammer') ?: 'hammer';
+            $duracion = (int)($_POST['duracion_anios'] ?? 7);
+            if ($duracion < 1 || $duracion > 10) {
+                throw new UserFacingError('Los años de duración deben estar entre 1 y 10.');
+            }
+            $imagen = validImageRef(postText('imagen', 'Imagen', 255));
 
-            // Subida de imagen
             if (!empty($_FILES['imagen_archivo']['name'])) {
                 $saved = saveUploadedFile($_FILES['imagen_archivo'], 'especialidad');
                 if ($saved) {
@@ -429,78 +244,65 @@ try {
                 }
             }
 
-            // Asegurar columnas en la base de datos
+            // Esquemas antiguos en la nube pueden no tener todas las columnas.
             try {
                 $cols = $pdo->query("SHOW COLUMNS FROM especialidades")->fetchAll(PDO::FETCH_COLUMN);
-                if (!in_array('titulo', $cols)) {
-                    $pdo->exec("ALTER TABLE especialidades ADD COLUMN titulo VARCHAR(150) NULL DEFAULT '' AFTER nombre");
-                }
-                if (!in_array('imagen', $cols)) {
-                    $pdo->exec("ALTER TABLE especialidades ADD COLUMN imagen VARCHAR(255) NULL DEFAULT '' AFTER descripcion");
-                }
-            } catch (Exception $e) {}
-
-            if ($id) {
-                if (!empty($imagen)) {
-                    $stmt = $pdo->prepare("UPDATE especialidades SET nombre = :nombre, titulo = :titulo, descripcion = :descripcion, icono = :icono, duracion_anios = :duracion, imagen = :imagen WHERE id = :id");
-                    $stmt->execute(['nombre' => $nombre, 'titulo' => $titulo, 'descripcion' => $descripcion, 'icono' => $icono, 'duracion' => $duracion, 'imagen' => $imagen, 'id' => $id]);
-                } else {
-                    $stmt = $pdo->prepare("UPDATE especialidades SET nombre = :nombre, titulo = :titulo, descripcion = :descripcion, icono = :icono, duracion_anios = :duracion WHERE id = :id");
-                    $stmt->execute(['nombre' => $nombre, 'titulo' => $titulo, 'descripcion' => $descripcion, 'icono' => $icono, 'duracion' => $duracion, 'id' => $id]);
-                }
-            } else {
-                $stmt = $pdo->prepare("INSERT INTO especialidades (nombre, titulo, descripcion, icono, duracion_anios, imagen) VALUES (:nombre, :titulo, :descripcion, :icono, :duracion, :imagen)");
-                $stmt->execute(['nombre' => $nombre, 'titulo' => $titulo, 'descripcion' => $descripcion, 'icono' => $icono, 'duracion' => $duracion, 'imagen' => $imagen]);
-            }
-
-            // Sincronizar index.html en disco local si es escribible
-            if ($id) {
-                $indexPath = __DIR__ . '/../../index.html';
-                if (file_exists($indexPath) && is_writable($indexPath)) {
-                    $indexHtml = file_get_contents($indexPath);
-                    $espNums = [1 => '01', 2 => '02', 3 => '03'];
-                    if (isset($espNums[$id])) {
-                        $num = $espNums[$id];
-                        if (!empty($imagen)) {
-                            $indexHtml = preg_replace('/(<div class="esp-num">' . $num . '<\/div>[\s\S]*?<div class="esp-foto">\s*<img src=")[^"]*(")/s', '$1img/' . $imagen . '$2', $indexHtml, 1);
-                        }
-                        if (!empty($titulo)) {
-                            $indexHtml = preg_replace('/(<div class="esp-num">' . $num . '<\/div>[\s\S]*?<div class="esp-body">\s*<h3>)(.*?)(<\/h3>)/s', '$1' . htmlspecialchars($titulo) . '$3', $indexHtml, 1);
-                        }
-                        if (!empty($nombre)) {
-                            $indexHtml = preg_replace('/(<div class="esp-num">' . $num . '<\/div>[\s\S]*?<p class="esp-titulo">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($nombre) . '$3', $indexHtml, 1);
-                        }
-                        if (!empty($descripcion)) {
-                            $indexHtml = preg_replace('/(<div class="esp-num">' . $num . '<\/div>[\s\S]*?<p class="esp-desc">)(.*?)(<\/p>)/s', '$1' . htmlspecialchars($descripcion) . '$3', $indexHtml, 1);
-                        }
-                        @file_put_contents($indexPath, $indexHtml);
+                $missing = [
+                    'titulo' => "ADD COLUMN titulo VARCHAR(150) NULL DEFAULT '' AFTER nombre",
+                    'imagen' => "ADD COLUMN imagen VARCHAR(255) NULL DEFAULT '' AFTER descripcion",
+                    'color'  => "ADD COLUMN color VARCHAR(50) NULL DEFAULT 'esp--verde'",
+                    'numero' => "ADD COLUMN numero VARCHAR(10) NULL DEFAULT '01'",
+                ];
+                foreach ($missing as $col => $ddl) {
+                    if (!in_array($col, $cols, true)) {
+                        $pdo->exec("ALTER TABLE especialidades $ddl");
                     }
                 }
+            } catch (Exception $e) {
+                error_log('save_especialidad columnas: ' . $e->getMessage());
+            }
+
+            if ($id) {
+                $sql = "UPDATE especialidades SET nombre = :nombre, titulo = :titulo, descripcion = :descripcion, icono = :icono, duracion_anios = :duracion" . ($imagen !== '' ? ", imagen = :imagen" : "") . " WHERE id = :id";
+                $params = ['nombre' => $nombre, 'titulo' => $titulo, 'descripcion' => $descripcion, 'icono' => $icono, 'duracion' => $duracion, 'id' => $id];
+                if ($imagen !== '') {
+                    $params['imagen'] = $imagen;
+                }
+                $pdo->prepare($sql)->execute($params);
+            } else {
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM especialidades")->fetchColumn();
+                $maxNumero = (int)$pdo->query("SELECT COALESCE(MAX(CAST(numero AS UNSIGNED)), 0) FROM especialidades")->fetchColumn();
+                $colores = ['esp--verde', 'esp--rojo', 'esp--azul'];
+                $stmt = $pdo->prepare("INSERT INTO especialidades (nombre, titulo, descripcion, icono, duracion_anios, imagen, color, numero) VALUES (:nombre, :titulo, :descripcion, :icono, :duracion, :imagen, :color, :numero)");
+                $stmt->execute([
+                    'nombre' => $nombre, 'titulo' => $titulo, 'descripcion' => $descripcion, 'icono' => $icono,
+                    'duracion' => $duracion, 'imagen' => $imagen,
+                    'color' => $colores[$count % 3], 'numero' => sprintf('%02d', $maxNumero + 1)
+                ]);
             }
 
             echo json_encode(['success' => true, 'imagen' => $imagen]);
             break;
 
         case 'delete_especialidad':
-            $id = intval($_POST['id'] ?? 0);
             $stmt = $pdo->prepare("DELETE FROM especialidades WHERE id = :id");
-            $stmt->execute(['id' => $id]);
+            $stmt->execute(['id' => requireId()]);
             echo json_encode(['success' => true]);
             break;
 
-        // --- HITOS HISTORICOS (PROYECTOS EMBLEMÁTICOS) ---
+        // --- HITOS HISTÓRICOS ---
         case 'save_hito':
-            $id = !empty($_POST['id']) ? intval($_POST['id']) : null;
-            $anio = trim($_POST['anio'] ?? date('Y'));
-            $titulo = trim($_POST['titulo'] ?? '');
-            $resumen = trim($_POST['resumen'] ?? '');
-            $descripcion = trim($_POST['descripcion'] ?? '');
-            $especialidad = trim($_POST['especialidad'] ?? '');
-            $destino = trim($_POST['destino'] ?? '');
-            $premio = trim($_POST['premio'] ?? '');
-            $enlace = trim($_POST['enlace'] ?? '');
-            $orden = intval($_POST['orden'] ?? 1);
-            $imagen = trim($_POST['imagen'] ?? '');
+            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+            $anio = postText('anio', 'Año', 50, true);
+            $titulo = postText('titulo', 'Título', 200, true);
+            $resumen = postText('resumen', 'Resumen', 65000, true);
+            $descripcion = postText('descripcion', 'Descripción', 65000, true);
+            $especialidad = postText('especialidad', 'Especialidad', 100);
+            $destino = postText('destino', 'Destino', 150);
+            $premio = postText('premio', 'Premio', 150);
+            $enlace = validExternalUrl(postText('enlace', 'Enlace', 255));
+            $orden = (int)($_POST['orden'] ?? 1);
+            $imagen = validImageRef(postText('imagen', 'Imagen', 255));
 
             if (!empty($_FILES['imagen_archivo']['name'])) {
                 $saved = saveUploadedFile($_FILES['imagen_archivo'], 'hito');
@@ -509,39 +311,50 @@ try {
                 }
             }
 
+            $params = ['a' => $anio, 't' => $titulo, 'r' => $resumen, 'd' => $descripcion, 'esp' => $especialidad, 'des' => $destino, 'pre' => $premio, 'enl' => $enlace, 'ord' => $orden];
             if ($id) {
-                if (!empty($imagen)) {
-                    $stmt = $pdo->prepare("UPDATE hitos_historicos SET anio = :a, titulo = :t, resumen = :r, descripcion = :d, imagen = :img, especialidad = :esp, destino = :des, premio = :pre, enlace = :enl, orden = :ord WHERE id = :id");
-                    $stmt->execute(['a' => $anio, 't' => $titulo, 'r' => $resumen, 'd' => $descripcion, 'img' => $imagen, 'esp' => $especialidad, 'des' => $destino, 'pre' => $premio, 'enl' => $enlace, 'ord' => $orden, 'id' => $id]);
-                } else {
-                    $stmt = $pdo->prepare("UPDATE hitos_historicos SET anio = :a, titulo = :t, resumen = :r, descripcion = :d, especialidad = :esp, destino = :des, premio = :pre, enlace = :enl, orden = :ord WHERE id = :id");
-                    $stmt->execute(['a' => $anio, 't' => $titulo, 'r' => $resumen, 'd' => $descripcion, 'esp' => $especialidad, 'des' => $destino, 'pre' => $premio, 'enl' => $enlace, 'ord' => $orden, 'id' => $id]);
+                $sql = "UPDATE hitos_historicos SET anio = :a, titulo = :t, resumen = :r, descripcion = :d, especialidad = :esp, destino = :des, premio = :pre, enlace = :enl, orden = :ord" . ($imagen !== '' ? ", imagen = :img" : "") . " WHERE id = :id";
+                $params['id'] = $id;
+                if ($imagen !== '') {
+                    $params['img'] = $imagen;
                 }
+                $pdo->prepare($sql)->execute($params);
             } else {
-                $stmt = $pdo->prepare("INSERT INTO hitos_historicos (anio, titulo, resumen, descripcion, imagen, especialidad, destino, premio, enlace, orden) VALUES (:a, :t, :r, :d, :img, :esp, :des, :pre, :enl, :ord)");
-                $stmt->execute(['a' => $anio, 't' => $titulo, 'r' => $resumen, 'd' => $descripcion, 'img' => $imagen, 'esp' => $especialidad, 'des' => $destino, 'pre' => $premio, 'enl' => $enlace, 'ord' => $orden]);
+                $params['img'] = $imagen;
+                $pdo->prepare("INSERT INTO hitos_historicos (anio, titulo, resumen, descripcion, imagen, especialidad, destino, premio, enlace, orden) VALUES (:a, :t, :r, :d, :img, :esp, :des, :pre, :enl, :ord)")->execute($params);
             }
             echo json_encode(['success' => true]);
             break;
 
         case 'delete_hito':
-            $id = intval($_POST['id'] ?? 0);
             $stmt = $pdo->prepare("DELETE FROM hitos_historicos WHERE id = :id");
-            $stmt->execute(['id' => $id]);
+            $stmt->execute(['id' => requireId()]);
             echo json_encode(['success' => true]);
             break;
 
         // --- PROYECTOS ---
         case 'save_proyecto':
-            $id = !empty($_POST['id']) ? intval($_POST['id']) : null;
-            $titulo = trim($_POST['titulo'] ?? '');
-            $subtitulo = trim($_POST['subtitulo'] ?? '');
-            $descripcion = trim($_POST['descripcion'] ?? '');
-            $especialidad_id = intval($_POST['especialidad_id'] ?? 1);
-            $anio = intval($_POST['anio'] ?? date('Y'));
-            $estado = trim($_POST['estado'] ?? 'En desarrollo');
+            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+            $titulo = postText('titulo', 'Título', 150, true);
+            $subtitulo = postText('subtitulo', 'Subtítulo', 255);
+            $descripcion = postText('descripcion', 'Descripción', 65000, true);
+            $especialidad_id = (int)($_POST['especialidad_id'] ?? 0);
+            $anio = (int)($_POST['anio'] ?? date('Y'));
+            $estado = postText('estado', 'Estado', 20, false, 'En desarrollo');
             $destacado = !empty($_POST['destacado']) ? 1 : 0;
-            $imagen = trim($_POST['imagen'] ?? '');
+            $imagen = validImageRef(postText('imagen', 'Imagen', 255));
+
+            if (!in_array($estado, ['En desarrollo', 'Finalizado', 'En ExpoTec'], true)) {
+                throw new UserFacingError('El estado del proyecto no es válido.');
+            }
+            if ($anio < 1900 || $anio > 2100) {
+                throw new UserFacingError('El año del proyecto no es válido.');
+            }
+            $check = $pdo->prepare("SELECT COUNT(*) FROM especialidades WHERE id = ?");
+            $check->execute([$especialidad_id]);
+            if (!(int)$check->fetchColumn()) {
+                throw new UserFacingError('La especialidad seleccionada no existe.');
+            }
 
             if (!empty($_FILES['imagen_archivo']['name'])) {
                 $saved = saveUploadedFile($_FILES['imagen_archivo'], 'proy');
@@ -550,77 +363,94 @@ try {
                 }
             }
 
+            $params = ['t' => $titulo, 's' => $subtitulo, 'd' => $descripcion, 'e' => $especialidad_id, 'a' => $anio, 'es' => $estado, 'des' => $destacado];
             if ($id) {
-                if (!empty($imagen)) {
-                    $stmt = $pdo->prepare("UPDATE proyectos SET titulo = :t, subtitulo = :s, descripcion = :d, especialidad_id = :e, anio = :a, estado = :es, destacado = :des, imagen = :img WHERE id = :id");
-                    $stmt->execute(['t' => $titulo, 's' => $subtitulo, 'd' => $descripcion, 'e' => $especialidad_id, 'a' => $anio, 'es' => $estado, 'des' => $destacado, 'img' => $imagen, 'id' => $id]);
-                } else {
-                    $stmt = $pdo->prepare("UPDATE proyectos SET titulo = :t, subtitulo = :s, descripcion = :d, especialidad_id = :e, anio = :a, estado = :es, destacado = :des WHERE id = :id");
-                    $stmt->execute(['t' => $titulo, 's' => $subtitulo, 'd' => $descripcion, 'e' => $especialidad_id, 'a' => $anio, 'es' => $estado, 'des' => $destacado, 'id' => $id]);
+                $sql = "UPDATE proyectos SET titulo = :t, subtitulo = :s, descripcion = :d, especialidad_id = :e, anio = :a, estado = :es, destacado = :des" . ($imagen !== '' ? ", imagen = :img" : "") . " WHERE id = :id";
+                $params['id'] = $id;
+                if ($imagen !== '') {
+                    $params['img'] = $imagen;
                 }
+                $pdo->prepare($sql)->execute($params);
             } else {
-                $autor_id = $_SESSION['admin_user']['id'] ?? 1;
-                $stmt = $pdo->prepare("INSERT INTO proyectos (titulo, subtitulo, descripcion, especialidad_id, anio, imagen, estado, autor_id, destacado) VALUES (:t, :s, :d, :e, :a, :img, :es, :aut, :des)");
-                $stmt->execute(['t' => $titulo, 's' => $subtitulo, 'd' => $descripcion, 'e' => $especialidad_id, 'a' => $anio, 'img' => $imagen, 'es' => $estado, 'aut' => $autor_id, 'des' => $destacado]);
+                $params['img'] = $imagen;
+                $params['aut'] = $_SESSION['admin_user']['id'];
+                $pdo->prepare("INSERT INTO proyectos (titulo, subtitulo, descripcion, especialidad_id, anio, imagen, estado, autor_id, destacado) VALUES (:t, :s, :d, :e, :a, :img, :es, :aut, :des)")->execute($params);
             }
             echo json_encode(['success' => true]);
             break;
 
         case 'delete_proyecto':
-            $id = intval($_POST['id'] ?? 0);
             $stmt = $pdo->prepare("DELETE FROM proyectos WHERE id = :id");
-            $stmt->execute(['id' => $id]);
+            $stmt->execute(['id' => requireId()]);
             echo json_encode(['success' => true]);
             break;
 
         // --- SUBIR IMAGEN GENERAL ---
         case 'upload_image':
-            if (!empty($_FILES['image']['name'])) {
-                $saved = saveUploadedFile($_FILES['image'], 'img');
-                if ($saved) {
-                    echo json_encode(['success' => true, 'filename' => $saved, 'url' => '/img/' . $saved]);
-                    exit;
-                }
+            $saved = saveUploadedFile($_FILES['image'] ?? null, 'img');
+            if (!$saved) {
+                throw new UserFacingError('No se seleccionó ningún archivo.');
             }
-            echo json_encode(['success' => false, 'error' => 'No se pudo subir la imagen']);
+            echo json_encode(['success' => true, 'filename' => $saved, 'url' => '/img/' . $saved]);
             break;
 
         // --- CAMBIAR CONTRASEÑA ADMIN ---
         case 'change_password':
-            $newPass = trim($_POST['new_password'] ?? '');
-            if (strlen($newPass) < 6) {
-                echo json_encode(['success' => false, 'error' => 'La contraseña debe tener al menos 6 caracteres']);
-                exit;
+            $current = (string)($_POST['current_password'] ?? '');
+            $newPass = (string)($_POST['new_password'] ?? '');
+            if (strlen($newPass) < 8) {
+                throw new UserFacingError('La contraseña debe tener al menos 8 caracteres.');
             }
-            $hash = password_hash($newPass, PASSWORD_BCRYPT);
+            if (strlen($newPass) > 72) {
+                throw new UserFacingError('La contraseña no puede superar los 72 caracteres.');
+            }
             $adminId = $_SESSION['admin_user']['id'];
+            $stmt = $pdo->prepare("SELECT password FROM usuarios WHERE id = :id");
+            $stmt->execute(['id' => $adminId]);
+            $storedHash = (string)$stmt->fetchColumn();
+            if ($current === '' || !password_verify($current, $storedHash)) {
+                throw new UserFacingError('La contraseña actual no es correcta.');
+            }
+            $hash = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 12]);
             $stmt = $pdo->prepare("UPDATE usuarios SET password = :hash WHERE id = :id");
             $stmt->execute(['hash' => $hash, 'id' => $adminId]);
+            session_regenerate_id(true);
             echo json_encode(['success' => true, 'message' => 'Contraseña actualizada con éxito']);
             break;
 
         // --- MENSAJES DE CONTACTO RECIBIDOS ---
         case 'get_mensajes_contacto':
-            try {
-                $stmt = $pdo->query("SELECT * FROM mensajes_contacto ORDER BY fecha_envio DESC");
-                $mensajes = $stmt->fetchAll();
-                echo json_encode(['success' => true, 'mensajes' => $mensajes]);
-            } catch (Exception $e) {
-                echo json_encode(['success' => true, 'mensajes' => []]);
-            }
+            $stmt = $pdo->query("SELECT * FROM mensajes_contacto ORDER BY fecha_envio DESC");
+            echo json_encode(['success' => true, 'mensajes' => $stmt->fetchAll()]);
+            break;
+
+        case 'toggle_mensaje_leido':
+            $id = requireId();
+            $stmt = $pdo->prepare("UPDATE mensajes_contacto SET leido = 1 - COALESCE(leido, 0) WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+            $stmt = $pdo->prepare("SELECT leido FROM mensajes_contacto WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+            echo json_encode(['success' => true, 'leido' => (int)$stmt->fetchColumn()]);
             break;
 
         case 'delete_mensaje_contacto':
-            $id = intval($_POST['id'] ?? 0);
             $stmt = $pdo->prepare("DELETE FROM mensajes_contacto WHERE id = :id");
-            $stmt->execute(['id' => $id]);
+            $stmt->execute(['id' => requireId()]);
             echo json_encode(['success' => true]);
             break;
 
         default:
-            echo json_encode(['success' => false, 'error' => 'Acción no válida']);
-            break;
+            throw new UserFacingError('Acción no válida.');
     }
-} catch (Exception $e) {
+} catch (UserFacingError $e) {
+    http_response_code(400);
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    // El detalle queda en el log: nunca se le envía SQL al navegador.
+    error_log('manage.php [' . $action . ']: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'No se pudo completar la operación. Intentá de nuevo.']);
 }

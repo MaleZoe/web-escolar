@@ -1,5 +1,8 @@
 <?php
 // Configuración y Seguridad Central de Acceso con soporte de variables de entorno (Vercel / Nube)
+require_once __DIR__ . '/../api/common.php';
+appSecurityHeaders();
+
 if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'root');
 if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
@@ -15,25 +18,7 @@ function getDB() {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
-            ];
-            // Soporte SSL automático para TiDB Cloud / Aiven / Nube
-            if (DB_HOST !== 'localhost' && DB_HOST !== '127.0.0.1') {
-                $caPaths = [
-                    '/etc/ssl/certs/ca-certificates.crt',
-                    '/etc/pki/tls/certs/ca-bundle.crt',
-                    '/etc/ssl/ca-bundle.pem',
-                    'C:\\xampp\\apache\\bin\\curl-ca-bundle.crt'
-                ];
-                foreach ($caPaths as $ca) {
-                    if (file_exists($ca)) {
-                        $options[PDO::MYSQL_ATTR_SSL_CA] = $ca;
-                        break;
-                    }
-                }
-                if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
-                    $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
-                }
-            }
+            ] + appDbSslOptions(DB_HOST);
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
             http_response_code(500);
@@ -42,6 +27,10 @@ function getDB() {
     }
     return $pdo;
 }
+
+// Tiempo que una sesión se conserva en la base. Es mayor que los 30 minutos de inactividad
+// de checkAdminAuth(), para que el recolector de PHP no la borre antes de ese vencimiento.
+if (!defined('SESSION_STORE_TTL')) define('SESSION_STORE_TTL', 3600);
 
 // Manejador de sesiones en base de datos para entornos serverless (Vercel / Lambda)
 class PdoSessionHandler implements SessionHandlerInterface {
@@ -76,7 +65,7 @@ class PdoSessionHandler implements SessionHandlerInterface {
     public function read($id): string|false {
         try {
             $stmt = $this->pdo->prepare("SELECT datos FROM sesiones_php WHERE id = :id AND ultimo_acceso > :exp");
-            $stmt->execute(['id' => $id, 'exp' => time() - 3600]);
+            $stmt->execute(['id' => $id, 'exp' => time() - SESSION_STORE_TTL]);
             $row = $stmt->fetch();
             return $row ? (string)$row['datos'] : '';
         } catch (Exception $e) {
@@ -121,6 +110,7 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', 1);
     ini_set('session.use_only_cookies', 1);
     ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.gc_maxlifetime', (string)SESSION_STORE_TTL);
 
     $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ||
                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
@@ -142,14 +132,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Obtener IP del cliente de forma segura
 function getClientIP() {
-    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-        return $_SERVER['HTTP_CF_CONNECTING_IP'];
-    }
-    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-        return trim($ips[0]);
-    }
-    return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    return appClientIP();
 }
 
 // Generador de Token CSRF

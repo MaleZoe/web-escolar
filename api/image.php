@@ -28,7 +28,7 @@ if (!array_key_exists($ext, $safeMimes)) {
 // 1. Si existe físicamente en /img/ en disco, redirigir o servir
 $localPath = __DIR__ . '/../img/' . $filename;
 if (file_exists($localPath) && is_file($localPath)) {
-    $detectedMime = mime_content_type($localPath) ?: $safeMimes[$ext];
+    $detectedMime = (function_exists('mime_content_type') ? mime_content_type($localPath) : '') ?: $safeMimes[$ext];
     header('Content-Type: ' . $detectedMime);
     header('Cache-Control: public, max-age=86400');
     readfile($localPath);
@@ -51,7 +51,7 @@ try {
         exit;
     }
 } catch (Exception $e) {
-    // Silencio en caso de error
+    error_log('image.php: ' . $e->getMessage());
 }
 
 // 3. Si no existe, 404

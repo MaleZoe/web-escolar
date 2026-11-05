@@ -9,7 +9,7 @@
       content="Contacto de la E.E.S.T. N.º 5 “Amancio Williams”: Juan B. Justo 4287, Mar del Plata. Correo infot5@eest5mdp.edu.ar."
     />
     <link rel="icon" type="image/png" href="../favicon.png" />
-    <link rel="stylesheet" href="../css/styles.css?v=3" />
+    <link rel="stylesheet" href="../css/styles.css?v=5" />
     <script>
       (function () {
         try {
@@ -163,7 +163,7 @@ Mar del Plata, Buenos Aires</p>
                   <span>Enviar Mensaje</span>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                 </button>
-                <span class="contacto-form-disclaimer">* Mensaje enviado directamente a la casilla de correo oficial.</span>
+                <span class="contacto-form-disclaimer">* Tu consulta se guarda en el sistema de la escuela y se envía a la casilla oficial a través del servicio FormSubmit.</span>
               </div>
 
               <div id="contactoStatus" class="contacto-status" style="display: none;" role="alert"></div>
@@ -219,8 +219,8 @@ Mar del Plata, Buenos Aires</p>
       </div>
     </footer>
 
-    <script src="../js/script.js" defer></script>
-    <script src="../js/dynamic_content.js?v=5" defer></script>
+    <script src="../js/script.js?v=2" defer></script>
+    <script src="../js/dynamic_content.js?v=6" defer></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         var form = document.getElementById("contactoForm");
@@ -251,54 +251,72 @@ Mar del Plata, Buenos Aires</p>
           submitBtn.innerHTML = '<span>Enviando mensaje...</span>';
           statusBox.style.display = "none";
 
+          var honey = form.elements["_honey"] ? form.elements["_honey"].value : "";
           var payload = {
             nombre: nombre,
             email: email,
             asunto: asunto,
             mensaje: mensaje,
-            _subject: "Nuevo mensaje de contacto web E.E.S.T. N.º 5: " + asunto + " (" + nombre + ")",
-            _template: "table",
-            _captcha: "false"
+            _honey: honey
           };
 
-          var sent = false;
-
-          // 1. Guardar en base de datos interna de respaldo
           try {
-            fetch("../api/contact.php", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            }).catch(function () {});
-          } catch (errDb) {}
+            // 1. El backend decide primero: valida, aplica el límite y guarda la consulta.
+            var saved = false;
+            try {
+              var dbRes = await fetch("../api/contact.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              });
+              var dbData = await dbRes.json();
+              if (dbRes.status === 400 || dbRes.status === 429) {
+                showStatus(dbData.error || "No se pudo enviar el mensaje.", true);
+                return;
+              }
+              saved = dbRes.ok && dbData.success === true;
+            } catch (errDb) {
+              saved = false;
+            }
 
-          // 2. Enviar por correo a infot5@eest5mdp.edu.ar vía FormSubmit
-          try {
-            var res = await fetch("https://formsubmit.co/ajax/infot5@eest5mdp.edu.ar", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-              },
-              body: JSON.stringify(payload)
-            });
-
-            var data = await res.json();
-            if (res.ok && (data.success === "true" || data.success === true)) {
-              sent = true;
-              showStatus("¡Muchas gracias! Tu mensaje ha sido enviado con éxito a infot5@eest5mdp.edu.ar. Te responderemos a la brevedad.", false);
+            // Campo trampa completo: se responde igual que un envío normal, sin mandar correo.
+            if (honey) {
+              showStatus("¡Muchas gracias! Recibimos tu mensaje.", false);
               form.reset();
-            } else if (data.message && data.message.includes("Activation")) {
-              sent = true;
-              showStatus("¡Mensaje recibido! Se ha notificado a infot5@eest5mdp.edu.ar.", false);
+              return;
+            }
+
+            // 2. Aviso por correo a la casilla oficial mediante FormSubmit.
+            var mailed = false;
+            try {
+              var res = await fetch("https://formsubmit.co/ajax/infot5@eest5mdp.edu.ar", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                  nombre: nombre,
+                  email: email,
+                  asunto: asunto,
+                  mensaje: mensaje,
+                  _subject: "Nuevo mensaje de contacto web E.E.S.T. N.º 5: " + asunto + " (" + nombre + ")",
+                  _template: "table",
+                  _captcha: "false"
+                })
+              });
+              var data = await res.json();
+              mailed = res.ok && (data.success === "true" || data.success === true);
+            } catch (errMail) {
+              mailed = false;
+            }
+
+            // 3. El aviso refleja lo que realmente ocurrió.
+            if (saved || mailed) {
+              showStatus("¡Muchas gracias! Recibimos tu mensaje. Te responderemos a la brevedad.", false);
               form.reset();
             } else {
-              throw new Error(data.message || "Error al enviar");
-            }
-          } catch (errMail) {
-            if (!sent) {
-              form.submit();
-              return;
+              showStatus("No pudimos enviar tu mensaje. Probá de nuevo o escribinos a infot5@eest5mdp.edu.ar.", true);
             }
           } finally {
             submitBtn.disabled = false;

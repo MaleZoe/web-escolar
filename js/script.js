@@ -137,16 +137,91 @@
   });
 })();
 
+/* ---- Escapado compartido para todo HTML armado desde JavaScript ---- */
+function eestEscapeHtml(text) {
+  if (text === null || text === undefined) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 /* ---- Línea de tiempo: hitos v2 desplegables ---- */
 (function () {
   "use strict";
-  var hitos = document.querySelectorAll(".hito-v2");
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  Array.prototype.forEach.call(hitos, function (hito) {
+  function textOf(root, selector, fallback) {
+    var el = root.querySelector(selector);
+    return el ? el.textContent.trim() : fallback || "";
+  }
+
+  function openHitoModal(hito, cardFoto, thumb) {
+    var title = textOf(hito, ".hito-v2-card-title") || textOf(hito, ".hito-v2-row-title") || "Hito Histórico";
+    var year = textOf(hito, ".hito-v2-year");
+    var badge = textOf(hito, ".hito-v2-badge", "Proyecto Destacado");
+
+    var img = cardFoto ? cardFoto.querySelector("img") : thumb || null;
+    if (!img) return;
+    var imgSrc = img.getAttribute("src") || img.src;
+    var imgAlt = img.getAttribute("alt") || title;
+
+    var caption = cardFoto ? textOf(cardFoto, "figcaption") : "";
+
+    // innerHTML de un nodo del DOM ya viene escapado por el navegador.
+    var descEl = hito.querySelector(".hito-v2-card-desc") || hito.querySelector(".hito-v2-row-summary");
+    var descHtml = descEl ? descEl.innerHTML : "";
+
+    var pillsHtml = "";
+    Array.prototype.forEach.call(hito.querySelectorAll(".hito-v2-pill"), function (pill) {
+      if (pill.hidden) return;
+      var label = textOf(pill, ".hito-v2-pill-label");
+      var val = textOf(pill, ".hito-v2-pill-val");
+      if (val) {
+        pillsHtml += '<div class="news-modal-hitos-pill"><strong>' + eestEscapeHtml(label) + "</strong><span>" + eestEscapeHtml(val) + "</span></div>";
+      }
+    });
+    if (pillsHtml) pillsHtml = '<div class="news-modal-hitos-pills">' + pillsHtml + "</div>";
+
+    var linkEl = hito.querySelector(".btn-hito-detalles");
+    var linkHref = linkEl && !linkEl.hidden ? linkEl.getAttribute("href") : "";
+
+    var isSubdir = window.location.pathname.includes("/pages/");
+    var logoSrc = isSubdir ? "../img/logo.png" : "img/logo.png";
+
+    var html =
+      '<div class="news-modal-media">' +
+        '<img src="' + eestEscapeHtml(imgSrc) + '" alt="' + eestEscapeHtml(imgAlt) + '" />' +
+      "</div>" +
+      '<div class="news-modal-info">' +
+        '<div class="news-modal-header">' +
+          '<img src="' + logoSrc + '" alt="EEST5" />' +
+          "<div>" +
+            '<p class="author-name">' + eestEscapeHtml(title) + "</p>" +
+            '<p class="post-date">E.E.S.T. N.º 5 "Amancio Williams"' + (year ? " · Año " + eestEscapeHtml(year) : "") + "</p>" +
+          "</div>" +
+        "</div>" +
+        (caption ? '<div class="news-modal-hitos-caption">📷 ' + eestEscapeHtml(caption) + "</div>" : "") +
+        '<div class="news-modal-caption">' + descHtml + "</div>" +
+        pillsHtml +
+        '<div class="news-modal-footer">' +
+          '<span class="news-modal-likes">' + eestEscapeHtml(badge) + "</span>" +
+          (linkHref ? '<a href="' + eestEscapeHtml(linkHref) + '" target="_blank" rel="noopener noreferrer" class="news-modal-link">Ver más detalles ↗</a>' : "") +
+        "</div>" +
+      "</div>";
+
+    EESTModal.open(html);
+  }
+
+  // Se expone para que dynamic_content.js active los hitos que agrega desde la base.
+  function bindHito(hito) {
     var row = hito.querySelector(".hito-v2-row");
     var panel = hito.querySelector(".hito-v2-card");
     var closeBtn = hito.querySelector(".hito-v2-btn-close");
+    var cardFoto = hito.querySelector(".hito-v2-card-foto");
+    var thumb = hito.querySelector(".hito-v2-thumb");
     if (!row || !panel) return;
 
     function scrollToHito() {
@@ -172,8 +247,8 @@
     }
 
     function expandHito() {
-      // Cerrar los demás hitos
-      Array.prototype.forEach.call(hitos, function (other) {
+      // Cerrar los demás hitos, incluidos los agregados después de cargar la página
+      Array.prototype.forEach.call(document.querySelectorAll(".hito-v2"), function (other) {
         if (other === hito) return;
         other.classList.remove("is-expanded");
         var otherRow = other.querySelector(".hito-v2-row");
@@ -190,22 +265,19 @@
       scrollToHito();
     }
 
-    row.addEventListener("click", function () {
+    function toggleHito() {
       if (hito.classList.contains("is-expanded")) {
         collapseHito();
       } else {
         expandHito();
       }
-    });
+    }
 
+    row.addEventListener("click", toggleHito);
     row.addEventListener("keydown", function (e) {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        if (hito.classList.contains("is-expanded")) {
-          collapseHito();
-        } else {
-          expandHito();
-        }
+        toggleHito();
       }
     });
 
@@ -215,83 +287,20 @@
         collapseHito();
       });
     }
-  });
-
-  // Vinculación de Pop-up Modal a las fotos de los Hitos Históricos
-  Array.prototype.forEach.call(hitos, function (hito) {
-    var cardFoto = hito.querySelector(".hito-v2-card-foto");
-    var thumb = hito.querySelector(".hito-v2-thumb");
-
-    function triggerHitoModal(e) {
-      if (e) e.stopPropagation();
-      var title = (hito.querySelector(".hito-v2-card-title") || hito.querySelector(".hito-v2-row-title") || {}).textContent || "Hito Histórico";
-      var year = (hito.querySelector(".hito-v2-year") || {}).textContent || "";
-      var badge = (hito.querySelector(".hito-v2-badge") || {}).textContent || "Proyecto Destacado";
-
-      var img = cardFoto ? cardFoto.querySelector("img") : (thumb || null);
-      if (!img) return;
-      var imgSrc = img.getAttribute("src") || img.src;
-      var imgAlt = img.getAttribute("alt") || title;
-
-      var captionEl = cardFoto ? cardFoto.querySelector("figcaption") : null;
-      var caption = captionEl ? captionEl.textContent.trim() : "";
-
-      var descEl = hito.querySelector(".hito-v2-card-desc") || hito.querySelector(".hito-v2-row-summary");
-      var descHtml = descEl ? descEl.innerHTML : "";
-
-      var pills = hito.querySelectorAll(".hito-v2-pill");
-      var pillsHtml = "";
-      if (pills && pills.length) {
-        pillsHtml = '<div class="news-modal-hitos-pills">';
-        Array.prototype.forEach.call(pills, function (pill) {
-          var label = (pill.querySelector(".pill-label") || {}).textContent || "";
-          var val = (pill.querySelector(".pill-val") || {}).textContent || "";
-          if (val) {
-            pillsHtml += '<div class="news-modal-hitos-pill"><strong>' + label + '</strong><span>' + val + '</span></div>';
-          }
-        });
-        pillsHtml += '</div>';
-      }
-
-      var linkEl = hito.querySelector(".btn-hito-detalles");
-      var linkHref = linkEl ? linkEl.getAttribute("href") : "";
-
-      var isSubdir = window.location.pathname.includes("/pages/");
-      var logoSrc = isSubdir ? "../img/logo.png" : "img/logo.png";
-
-      var html =
-        '<div class="news-modal-media">' +
-          '<img src="' + imgSrc + '" alt="' + imgAlt + '" />' +
-        '</div>' +
-        '<div class="news-modal-info">' +
-          '<div class="news-modal-header">' +
-            '<img src="' + logoSrc + '" alt="EEST5" />' +
-            '<div>' +
-              '<p class="author-name">' + title + '</p>' +
-              '<p class="post-date">E.E.S.T. N.º 5 "Amancio Williams"' + (year ? ' · Año ' + year : '') + '</p>' +
-            '</div>' +
-          '</div>' +
-          (caption ? '<div class="news-modal-hitos-caption">📷 ' + caption + '</div>' : '') +
-          '<div class="news-modal-caption">' + descHtml + '</div>' +
-          pillsHtml +
-          '<div class="news-modal-footer">' +
-            '<span class="news-modal-likes">' + badge + '</span>' +
-            (linkHref ? '<a href="' + linkHref + '" target="_blank" rel="noopener noreferrer" class="news-modal-link">Ver más detalles ↗</a>' : '') +
-          '</div>' +
-        '</div>';
-
-      EESTModal.open(html);
-    }
 
     if (cardFoto) {
-      cardFoto.addEventListener("click", triggerHitoModal);
+      cardFoto.addEventListener("click", function (e) {
+        e.stopPropagation();
+        openHitoModal(hito, cardFoto, thumb);
+      });
       cardFoto.setAttribute("role", "button");
       cardFoto.setAttribute("tabindex", "0");
       cardFoto.setAttribute("title", "Clic para ampliar fotografía y detalles");
       cardFoto.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          triggerHitoModal(e);
+          e.stopPropagation();
+          openHitoModal(hito, cardFoto, thumb);
         }
       });
     }
@@ -299,10 +308,13 @@
     if (thumb) {
       thumb.addEventListener("click", function (e) {
         e.stopPropagation();
-        triggerHitoModal(e);
+        openHitoModal(hito, cardFoto, thumb);
       });
     }
-  });
+  }
+
+  window.EESTBindHito = bindHito;
+  Array.prototype.forEach.call(document.querySelectorAll(".hito-v2"), bindHito);
 })();
 
 /* ===========================================================
@@ -397,15 +409,7 @@ var EESTModal = (function () {
     window.addEventListener("resize", updateArrows, { passive: true });
   }
 
-  function escapeHtml(text) {
-    if (!text) return "";
-    return String(text)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
+  var escapeHtml = eestEscapeHtml;
 
   function formatDate(isoStr) {
     if (!isoStr) return "";
@@ -535,8 +539,7 @@ var EESTModal = (function () {
   // Sincronización automática con Behold
   function loadBeholdFeed(url) {
     var feedUrl = url || FEED_URL;
-    var fetchUrl = feedUrl + (feedUrl.indexOf("?") === -1 ? "?" : "&") + "_t=" + Date.now();
-    fetch(fetchUrl, { cache: "no-store" })
+    fetch(feedUrl, { cache: "no-cache" })
       .then(function (res) {
         if (!res.ok) throw new Error("HTTP error " + res.status);
         return res.json();
@@ -560,16 +563,20 @@ var EESTModal = (function () {
       });
   }
 
+  // dynamic_content.js la llama una sola vez, con la URL configurada en el panel.
   window.loadBeholdFeed = loadBeholdFeed;
-  loadBeholdFeed(FEED_URL);
 })();
 
 /* ---- Modal para otras imágenes institucionales (Especialidades, ExpoTec) ---- */
 (function () {
   "use strict";
 
-  // Especialidades (index.html)
-  document.querySelectorAll(".esp").forEach(function (card) {
+  function logoPath() {
+    return window.location.pathname.includes("/pages/") ? "../img/logo.png" : "img/logo.png";
+  }
+
+  // Especialidades (index.html). Se expone para las tarjetas agregadas desde la base.
+  function bindEspecialidad(card) {
     var foto = card.querySelector(".esp-foto");
     if (!foto) return;
     foto.style.cursor = "pointer";
@@ -581,30 +588,31 @@ var EESTModal = (function () {
       var subtitle = (card.querySelector(".esp-titulo") || {}).textContent || "";
       var desc = (card.querySelector(".esp-desc") || {}).textContent || "";
       var num = (card.querySelector(".esp-num") || {}).textContent || "";
-      var isSubdir = window.location.pathname.includes("/pages/");
-      var logoSrc = isSubdir ? "../img/logo.png" : "img/logo.png";
 
       var html =
         '<div class="news-modal-media">' +
-          '<img src="' + img.src + '" alt="' + (img.alt || title) + '" />' +
-        '</div>' +
+          '<img src="' + eestEscapeHtml(img.src) + '" alt="' + eestEscapeHtml(img.alt || title) + '" />' +
+        "</div>" +
         '<div class="news-modal-info">' +
           '<div class="news-modal-header">' +
-            '<img src="' + logoSrc + '" alt="EEST5" />' +
-            '<div>' +
-              '<p class="author-name">' + title + '</p>' +
-              '<p class="post-date">' + subtitle + '</p>' +
-            '</div>' +
-          '</div>' +
-          '<div class="news-modal-caption">' + desc + '</div>' +
+            '<img src="' + logoPath() + '" alt="EEST5" />' +
+            "<div>" +
+              '<p class="author-name">' + eestEscapeHtml(title) + "</p>" +
+              '<p class="post-date">' + eestEscapeHtml(subtitle) + "</p>" +
+            "</div>" +
+          "</div>" +
+          '<div class="news-modal-caption">' + eestEscapeHtml(desc) + "</div>" +
           '<div class="news-modal-footer">' +
-            '<span class="news-modal-likes">Especialidad ' + num + '</span>' +
+            '<span class="news-modal-likes">Especialidad ' + eestEscapeHtml(num) + "</span>" +
             '<a href="#especialidades" class="news-modal-link" onclick="if(window.EESTModal) window.EESTModal.close()">7 años de formación</a>' +
-          '</div>' +
-        '</div>';
+          "</div>" +
+        "</div>";
       if (window.EESTModal) window.EESTModal.open(html);
     });
-  });
+  }
+
+  window.EESTBindEspecialidad = bindEspecialidad;
+  document.querySelectorAll(".esp").forEach(bindEspecialidad);
 
   // ExpoTec Sectores (expotec.html)
   document.querySelectorAll(".expo-card").forEach(function (card) {
@@ -616,30 +624,26 @@ var EESTModal = (function () {
       var title = (card.querySelector("h3") || {}).textContent || "Sector ExpoTec";
       var desc = (card.querySelector("p") || {}).textContent || "";
       var num = (card.querySelector(".expo-num") || {}).textContent || "";
-      var isSubdir = window.location.pathname.includes("/pages/");
-      var logoSrc = isSubdir ? "../img/logo.png" : "img/logo.png";
 
       var html =
         '<div class="news-modal-media">' +
-          '<img src="' + img.src + '" alt="' + (img.alt || title) + '" />' +
-        '</div>' +
+          '<img src="' + eestEscapeHtml(img.src) + '" alt="' + eestEscapeHtml(img.alt || title) + '" />' +
+        "</div>" +
         '<div class="news-modal-info">' +
           '<div class="news-modal-header">' +
-            '<img src="' + logoSrc + '" alt="EEST5" />' +
-            '<div>' +
-              '<p class="author-name">' + title + '</p>' +
+            '<img src="' + logoPath() + '" alt="EEST5" />' +
+            "<div>" +
+              '<p class="author-name">' + eestEscapeHtml(title) + "</p>" +
               '<p class="post-date">ExpoTec · Muestra Anual de Proyectos</p>' +
-            '</div>' +
-          '</div>' +
-          '<div class="news-modal-caption">' + desc + '</div>' +
+            "</div>" +
+          "</div>" +
+          '<div class="news-modal-caption">' + eestEscapeHtml(desc) + "</div>" +
           '<div class="news-modal-footer">' +
-            '<span class="news-modal-likes">Sector ' + num + '</span>' +
+            '<span class="news-modal-likes">Sector ' + eestEscapeHtml(num) + "</span>" +
             '<span class="news-modal-link">E.E.S.T. N.º 5</span>' +
-          '</div>' +
-        '</div>';
+          "</div>" +
+        "</div>";
       if (window.EESTModal) window.EESTModal.open(html);
     });
   });
 })();
-
-

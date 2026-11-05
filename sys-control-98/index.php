@@ -38,10 +38,11 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Panel de Administración | E.E.S.T. N.º 5</title>
   <link rel="icon" type="image/png" href="../favicon.png" />
-  <link rel="stylesheet" href="../css/styles.css?v=3" />
+  <link rel="stylesheet" href="../css/styles.css?v=5" />
   <link rel="stylesheet" href="css/admin.css?v=2" />
   <script>
     window.CSRF_TOKEN = <?= json_encode(getCSRFToken()) ?>;
+    window.MAX_UPLOAD_BYTES = <?= (int)appMaxUploadBytes() ?>;
   </script>
 </head>
 <body>
@@ -110,10 +111,13 @@ try {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
           Ver Sitio Web
         </a>
-        <a href="logout.php" class="footer-link text-danger">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-          Cerrar Sesión
-        </a>
+        <form method="POST" action="logout.php" style="margin: 0;">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(getCSRFToken()) ?>" />
+          <button type="submit" class="footer-link text-danger" style="background: none; border: 0; width: 100%; cursor: pointer; font: inherit; text-align: left;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            Cerrar Sesión
+          </button>
+        </form>
       </div>
     </aside>
 
@@ -699,7 +703,7 @@ try {
                       <small class="text-muted"><strong>Reconocimiento:</strong> <?= htmlspecialchars($hito['premio'] ?? '—') ?></small>
                     </td>
                     <td style="white-space: nowrap;">
-                      <button class="btn-action edit" onclick='editHito(<?= json_encode($hito) ?>)'>Editar</button>
+                      <button class="btn-action edit" onclick='editHito(<?= json_encode($hito, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>Editar</button>
                       <button class="btn-action delete" onclick="deleteHito(<?= $hito['id'] ?>)">Eliminar</button>
                     </td>
                   </tr>
@@ -718,6 +722,10 @@ try {
               <h3 class="card-title">Presentación de la Muestra ExpoTec</h3>
               <p class="text-muted">Textos principales de la cabecera e introducción.</p>
               <div class="grid-2 mt-3">
+                <div class="field">
+                  <label>Etiqueta de la Página</label>
+                  <input type="text" name="expotec_tag" value="<?= htmlspecialchars($contenido['expotec_tag'] ?? 'ExpoTec') ?>" />
+                </div>
                 <div class="field">
                   <label>Título Principal de la Página (Hero)</label>
                   <input type="text" name="expotec_titulo" value="<?= htmlspecialchars($contenido['expotec_titulo'] ?? 'Una vez al año, la escuela se convierte en muestra.') ?>" />
@@ -916,7 +924,7 @@ try {
                           </span>
                         </td>
                         <td class="actions-cell">
-                          <button class="btn-action edit" onclick='editProyecto(<?= json_encode($proy, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>Editar</button>
+                          <button class="btn-action edit" onclick='editProyecto(<?= json_encode($proy, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>Editar</button>
                           <button class="btn-action delete" onclick="deleteProyecto(<?= (int)$proy['id'] ?>)">Eliminar</button>
                         </td>
                       </tr>
@@ -1255,7 +1263,10 @@ try {
                       </div>
                       <div style="display: flex; align-items: center; gap: 10px;">
                         <small style="color: var(--texto-suave);"><?= date('d/m/Y H:i', strtotime($msg['fecha_envio'])) ?></small>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="deleteMensajeContacto(<?= $msg['id'] ?>)" title="Eliminar mensaje" style="color: #dc2626; padding: 4px 8px; font-size: 0.8rem;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleMensajeLeido(<?= (int)$msg['id'] ?>)" title="Cambiar estado de lectura" style="padding: 4px 8px; font-size: 0.8rem;">
+                          <?= !empty($msg['leido']) ? 'Leído ✓ (marcar no leído)' : 'Marcar como leído' ?>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="deleteMensajeContacto(<?= (int)$msg['id'] ?>)" title="Eliminar mensaje" style="color: #dc2626; padding: 4px 8px; font-size: 0.8rem;">
                           &times; Eliminar
                         </button>
                       </div>
@@ -1276,12 +1287,16 @@ try {
             
             <form onsubmit="changePassword(event)" class="mt-4">
               <div class="field">
+                <label>Contraseña Actual</label>
+                <input type="password" id="current_admin_password" required autocomplete="current-password" />
+              </div>
+              <div class="field mt-3">
                 <label>Nueva Contraseña</label>
-                <input type="password" id="new_admin_password" required minlength="6" placeholder="Mínimo 6 caracteres" />
+                <input type="password" id="new_admin_password" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="Mínimo 8 caracteres" />
               </div>
               <div class="field mt-3">
                 <label>Confirmar Nueva Contraseña</label>
-                <input type="password" id="confirm_admin_password" required minlength="6" placeholder="Repite la contraseña" />
+                <input type="password" id="confirm_admin_password" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="Repite la contraseña" />
               </div>
               <div class="form-actions mt-4">
                 <button type="submit" class="btn btn-primary">Actualizar Contraseña</button>
@@ -1491,6 +1506,6 @@ try {
     </div>
   </div>
 
-  <script src="js/admin.js?v=3"></script>
+  <script src="js/admin.js?v=4"></script>
 </body>
 </html>

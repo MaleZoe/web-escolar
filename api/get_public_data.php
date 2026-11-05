@@ -53,7 +53,6 @@ try {
             'ense?a' => 'enseña',
             'Pr?cticas' => 'Prácticas',
             'pr?cticas' => 'prácticas',
-            'profesionalizant' => 'profesionalizant',
             '?ltimo' => 'último',
             'coraz?n' => 'corazón',
             'te?rico' => 'teórico',
@@ -94,11 +93,9 @@ try {
             'atmosf?ric' => 'atmosféric',
             'transmisi?n' => 'transmisión',
             '?ntegramente' => 'íntegramente',
-            'ntegramente' => 'íntegramente',
             'ergon?mic' => 'ergonómic',
             'expresi?n' => 'expresión',
-            'art?stic' => 'artístic',
-            'lata' => 'lata'
+            'art?stic' => 'artístic'
         ];
         return str_replace(array_keys($replacements), array_values($replacements), $text);
     };
@@ -131,7 +128,8 @@ try {
     unset($hito);
 
     // Proyectos
-    $stmtProy = $pdo->query("SELECT p.*, e.nombre as especialidad_nombre FROM proyectos p LEFT JOIN especialidades e ON p.especialidad_id = e.id ORDER BY p.id DESC");
+    // Solo columnas públicas: autor_id no se expone.
+    $stmtProy = $pdo->query("SELECT p.id, p.titulo, p.subtitulo, p.descripcion, p.especialidad_id, p.anio, p.imagen, p.estado, p.destacado, e.nombre AS especialidad_nombre FROM proyectos p LEFT JOIN especialidades e ON p.especialidad_id = e.id ORDER BY p.destacado DESC, p.anio DESC, p.id DESC");
     $proyectos = $stmtProy->fetchAll();
     foreach ($proyectos as &$proy) {
         if (isset($proy['titulo'])) $proy['titulo'] = $cleanBadEnc($proy['titulo']);
@@ -149,5 +147,7 @@ try {
         'proyectos' => $proyectos
     ], JSON_UNESCAPED_UNICODE);
 } catch (Exception $e) {
+    error_log('get_public_data: ' . $e->getMessage());
+    http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Error al obtener datos públicos']);
 }

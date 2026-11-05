@@ -3794,8 +3794,48 @@ html:not([data-theme="dark"]) .theme-icon-moon {
   }
 }
 
-
-
-
-
-
+/* ---------- Catálogo de proyectos ExpoTec y contenido dinámico ---------- */
+[hidden] {
+  display: none !important;
+}
+.proyectos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 22px;
+}
+.proyecto-meta {
+  display: block;
+  font-family: var(--display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--verde-claro);
+  margin-bottom: 6px;
+}
+.proyecto-card .proyecto-subtitulo {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.proyecto-estado {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--crema-suave);
+  color: var(--carbon);
+}
+.expo-anuncio {
+  font-weight: 700;
+  color: var(--verde);
+  margin: 0 0 14px;
+}
+.hero .expo-anuncio {
+  color: inherit;
+}
+.inst-chapter-summary {
+  font-style: italic;
+}
+[data-theme="dark"] .expo-anuncio {
+  color: var(--verde-claro);
+}

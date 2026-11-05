@@ -4,6 +4,12 @@
 *.tar.gz
 *.rar
 database.sql
+migrations/
+.htaccess
+.env.example
+
+# Vercel solo ejecuta PHP dentro de api/: fuera de ahí se serviría como texto
+admin/
 
 # Documentación y desarrollo local
 docs/

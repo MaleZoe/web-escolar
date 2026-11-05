@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config.php';
 
 $error = '';
+$info = '';
 $ip = getClientIP();
 $pdo = getDB();
 
@@ -18,23 +19,36 @@ try {
 
 // Comprobar si la IP está bloqueada por fuerza bruta
 $isBlocked = false;
+$intentoRow = null;
 try {
-    $stmtCheck = $pdo->prepare("SELECT * FROM intentos_login WHERE ip = :ip");
+    // Los tiempos se comparan en la base: la zona horaria de PHP puede ser distinta.
+    $stmtCheck = $pdo->prepare("SELECT intentos,
+            TIMESTAMPDIFF(SECOND, NOW(), bloqueado_hasta) AS bloqueo_restante,
+            TIMESTAMPDIFF(SECOND, ultimo_intento, NOW()) AS desde_ultimo
+        FROM intentos_login WHERE ip = :ip");
     $stmtCheck->execute(['ip' => $ip]);
-    $intentoRow = $stmtCheck->fetch();
+    $intentoRow = $stmtCheck->fetch() ?: null;
 
-    if ($intentoRow && !empty($intentoRow['bloqueado_hasta'])) {
-        $bloqueoTimestamp = strtotime($intentoRow['bloqueado_hasta']);
-        if ($bloqueoTimestamp > time()) {
+    if ($intentoRow) {
+        if ((int)$intentoRow['bloqueo_restante'] > 0) {
             $isBlocked = true;
-            $minutosRestantes = ceil(($bloqueoTimestamp - time()) / 60);
+            $minutosRestantes = ceil((int)$intentoRow['bloqueo_restante'] / 60);
             $error = "Acceso bloqueado por reiterados intentos fallidos. Espera {$minutosRestantes} minuto(s) antes de volver a intentar.";
+        } elseif ($intentoRow['bloqueo_restante'] !== null || (int)$intentoRow['desde_ultimo'] > 900) {
+            // Bloqueo vencido o sin fallos en 15 minutos: el contador vuelve a empezar.
+            $pdo->prepare("DELETE FROM intentos_login WHERE ip = :ip")->execute(['ip' => $ip]);
+            $intentoRow = null;
         }
     }
-} catch (Exception $e) {}
+} catch (Exception $e) {
+    error_log('login intentos: ' . $e->getMessage());
+}
 
 if (isset($_GET['msg']) && $_GET['msg'] === 'timeout') {
     $error = "Tu sesión ha expirado por inactividad. Por favor, ingresa tus credenciales nuevamente.";
+}
+if (isset($_GET['msg']) && $_GET['msg'] === 'logout') {
+    $info = "Cerraste la sesión correctamente.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
@@ -43,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
         $error = 'Validación de seguridad expirada. Por favor, recarga la página.';
     } else {
         $usuario = trim($_POST['usuario'] ?? '');
-        $password = trim($_POST['password'] ?? '');
+        $password = (string)($_POST['password'] ?? '');
 
         if (!empty($usuario) && !empty($password)) {
             try {
@@ -75,26 +89,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
                 } else {
                     // Fallo: registrar intento y aplicar bloqueo gradual
                     $intentos = ($intentoRow['intentos'] ?? 0) + 1;
-                    $bloqueadoHasta = null;
+                    $bloquear = $intentos >= 5;
+                    $bloqueoSql = $bloquear ? "DATE_ADD(NOW(), INTERVAL 15 MINUTE)" : "NULL";
 
-                    if ($intentos >= 5) {
-                        $bloqueadoHasta = date('Y-m-d H:i:s', time() + (15 * 60));
+                    if ($bloquear) {
+                        $isBlocked = true;
                         $error = "Has superado el límite de 5 intentos permitidos. El acceso ha sido bloqueado por 15 minutos.";
                     } else {
                         $restantes = 5 - $intentos;
                         $error = "Credenciales incorrectas o acceso no autorizado. Intentos restantes antes del bloqueo: {$restantes}.";
                     }
 
-                    $stmtLog = $pdo->prepare("INSERT INTO intentos_login (ip, intentos, ultimo_intento, bloqueado_hasta) 
-                        VALUES (:ip, :intentos, NOW(), :bloq) 
-                        ON DUPLICATE KEY UPDATE intentos = :intentos2, bloqueado_hasta = :bloq2");
-                    $stmtLog->execute([
-                        'ip' => $ip,
-                        'intentos' => $intentos,
-                        'bloq' => $bloqueadoHasta,
-                        'intentos2' => $intentos,
-                        'bloq2' => $bloqueadoHasta
-                    ]);
+                    $stmtLog = $pdo->prepare("INSERT INTO intentos_login (ip, intentos, ultimo_intento, bloqueado_hasta)
+                        VALUES (:ip, :intentos, NOW(), $bloqueoSql)
+                        ON DUPLICATE KEY UPDATE intentos = VALUES(intentos), ultimo_intento = NOW(), bloqueado_hasta = VALUES(bloqueado_hasta)");
+                    $stmtLog->execute(['ip' => $ip, 'intentos' => $intentos]);
                 }
             } catch (Exception $e) {
                 $error = 'Error seguro en la autenticación. Intente más tarde.';
@@ -113,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
   <meta name="robots" content="noindex, nofollow" />
   <title>Acceso al Sistema | Gestión Central</title>
   <link rel="icon" type="image/png" href="../favicon.png" />
-  <link rel="stylesheet" href="../css/styles.css?v=3" />
+  <link rel="stylesheet" href="../css/styles.css?v=5" />
   <style>
     body {
       min-height: 100vh;
@@ -239,6 +248,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
       <h1>Gestión y Administración</h1>
       <p>Acceso restringido a personal autorizado</p>
     </div>
+
+    <?php if (!empty($info) && empty($error)): ?>
+      <div class="alert-error" style="background: #e8f5e9; color: var(--verde); border-color: rgba(52, 100, 1, 0.25);">
+        <?= htmlspecialchars($info) ?>
+      </div>
+    <?php endif; ?>
 
     <?php if (!empty($error)): ?>
       <div class="alert-error">

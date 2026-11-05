@@ -118,7 +118,7 @@ Archivo: `pages/contacto.html`
   - Correo electrónico de contacto.
   - Asunto del mensaje.
   - Mensaje detallado.
-  - *Protección inteligente:* Cuenta con validación anti-spam y token de seguridad CSRF.
+  - *Protección:* validación en el servidor, campo trampa anti-bots y límite de 5 mensajes cada 15 minutos por IP.
 - **Ubicación en el Mapa:** Mapa dinámico con la ubicación exacta en **Av. Juan B. Justo 4287, Mar del Plata**.
 - **Canales Directos:** Correo electrónico institucional (`infot5@eest5mdp.edu.ar`), horarios de atención y redes oficiales.
 
@@ -201,8 +201,8 @@ Una vez autenticado, verás:
 
 #### Módulo 9: Seguridad y Cambio de Contraseña
 - Permite al administrador cambiar su contraseña actual por una nueva.
-- Requiere ingresar la nueva clave y su confirmación (mínimo 6 caracteres).
-- La contraseña se guarda con cifrado seguro hash `BCRYPT`.
+- Requiere ingresar la contraseña actual, la nueva clave y su confirmación (mínimo 8 caracteres).
+- La contraseña se guarda como hash `BCRYPT` de costo 12.
 
 ---
 

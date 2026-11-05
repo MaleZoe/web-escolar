@@ -117,6 +117,12 @@ function closeModal(id) {
   if (modal) modal.classList.remove('active');
 }
 
+// Un archivo elegido antes no debe reenviarse al abrir otro registro en el mismo modal.
+function clearFileInputs(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.querySelectorAll('input[type="file"]').forEach(input => { input.value = ''; });
+}
+
 // HELPER DE COMUNICACIÓN CON LA API
 function getApiEndpoint(action) {
   var base = (document.currentScript && document.currentScript.src)
@@ -139,6 +145,14 @@ async function fetchApi(url, options = {}) {
     }
     if (options.body instanceof FormData && window.CSRF_TOKEN && !options.body.has('csrf_token')) {
       options.body.append('csrf_token', window.CSRF_TOKEN);
+    }
+    if (options.body instanceof FormData && window.MAX_UPLOAD_BYTES) {
+      for (const value of options.body.values()) {
+        if (value instanceof File && value.size > window.MAX_UPLOAD_BYTES) {
+          const mb = Math.round(window.MAX_UPLOAD_BYTES / 1048576);
+          return { success: false, error: `"${value.name}" supera el máximo de ${mb} MB.` };
+        }
+      }
     }
     const res = await fetch(url, options);
     const text = await res.text();
@@ -261,7 +275,7 @@ async function submitEspecialidad(e) {
 }
 
 async function deleteEspecialidad(id) {
-  if (!confirm('¿Seguro que deseas eliminar esta especialidad?')) return;
+  if (!confirm('¿Seguro que deseas eliminar esta especialidad?\n\nTambién se eliminarán todos los proyectos asociados a ella.')) return;
   const formData = new FormData();
   formData.append('action', 'delete_especialidad');
   formData.append('id', id);
@@ -286,6 +300,7 @@ function openProyectoModal() {
   document.getElementById('proy_imagen').value = '';
   if (document.getElementById('proy_estado')) document.getElementById('proy_estado').value = 'En desarrollo';
   if (document.getElementById('proy_destacado')) document.getElementById('proy_destacado').value = '0';
+  clearFileInputs('modal-proyecto');
   document.getElementById('modal-proyecto').classList.add('active');
 }
 
@@ -300,6 +315,7 @@ function editProyecto(proy) {
   document.getElementById('proy_imagen').value = proy.imagen || '';
   if (document.getElementById('proy_estado')) document.getElementById('proy_estado').value = proy.estado || 'En desarrollo';
   if (document.getElementById('proy_destacado')) document.getElementById('proy_destacado').value = (proy.destacado == 1 || proy.destacado === true) ? '1' : '0';
+  clearFileInputs('modal-proyecto');
   document.getElementById('modal-proyecto').classList.add('active');
 }
 
@@ -346,6 +362,7 @@ function openHitoModal() {
   document.getElementById('hito_imagen').value = '';
   document.getElementById('hito_enlace').value = '';
   document.getElementById('hito_orden').value = '1';
+  clearFileInputs('modal-hito');
   document.getElementById('modal-hito').classList.add('active');
 }
 
@@ -362,6 +379,7 @@ function editHito(hito) {
   document.getElementById('hito_imagen').value = hito.imagen || '';
   document.getElementById('hito_enlace').value = hito.enlace || '';
   document.getElementById('hito_orden').value = hito.orden;
+  clearFileInputs('modal-hito');
   document.getElementById('modal-hito').classList.add('active');
 }
 
@@ -397,21 +415,24 @@ async function deleteHito(id) {
 // ================= SEGURIDAD =================
 async function changePassword(e) {
   e.preventDefault();
+  const current = document.getElementById('current_admin_password').value;
   const pass = document.getElementById('new_admin_password').value;
-  const confirm = document.getElementById('confirm_admin_password').value;
+  const confirmation = document.getElementById('confirm_admin_password').value;
 
-  if (pass !== confirm) {
+  if (pass !== confirmation) {
     showToast('Las contraseñas no coinciden', true);
     return;
   }
 
   const formData = new FormData();
   formData.append('action', 'change_password');
+  formData.append('current_password', current);
   formData.append('new_password', pass);
 
   const data = await fetchApi(getApiEndpoint(), { method: 'POST', body: formData });
   if (data.success) {
     showToast(data.message || 'Contraseña actualizada');
+    document.getElementById('current_admin_password').value = '';
     document.getElementById('new_admin_password').value = '';
     document.getElementById('confirm_admin_password').value = '';
   } else {
@@ -420,6 +441,18 @@ async function changePassword(e) {
 }
 
 // ================= MENSAJES DE CONTACTO =================
+async function toggleMensajeLeido(id) {
+  const formData = new FormData();
+  formData.append('id', id);
+  const data = await fetchApi(getApiEndpoint('toggle_mensaje_leido'), { method: 'POST', body: formData });
+  if (data.success) {
+    showToast(data.leido ? 'Marcado como leído' : 'Marcado como no leído');
+    setTimeout(() => location.reload(), 600);
+  } else {
+    showToast(data.error || 'Error al actualizar', true);
+  }
+}
+
 async function deleteMensajeContacto(id) {
   if (!confirm("¿Seguro que deseas eliminar este mensaje de la bandeja de respaldo?")) return;
   const formData = new FormData();

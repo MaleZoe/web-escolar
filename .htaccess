@@ -1,0 +1,24 @@
+# Protege el sitio cuando corre en Apache (XAMPP / servidor propio). Vercel usa vercel.json.
+Options -Indexes
+
+<IfModule mod_authz_core.c>
+  # Volcados, documentación, variables de entorno y archivos de proyecto
+  <FilesMatch "(?i)(\.(sql|md|log|bak|sh)|^\.env.*|^\.git.*|^\.vercel.*|^package(-lock)?\.json|^vercel\.json)$">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(docs|\.git|\.claude|node_modules)(/|$) - [F,L]
+
+  # Imágenes guardadas solo en la base de datos, igual que la ruta /img de vercel.json
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^img/(.+)$ api/image.php?file=$1 [L,QSA]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

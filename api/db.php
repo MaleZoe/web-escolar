@@ -1,5 +1,7 @@
 <?php
-// Conexión pública solo lectura a MySQL con soporte de variables de entorno para Vercel / Nube
+// Conexion PDO de los endpoints publicos, con soporte de variables de entorno para Vercel / Nube
+require_once __DIR__ . '/common.php';
+
 if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'root');
 if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
@@ -14,25 +16,7 @@ function getPublicDB() {
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
-        ];
-        // Soporte SSL automático para TiDB Cloud / Aiven / Nube
-        if (DB_HOST !== 'localhost' && DB_HOST !== '127.0.0.1') {
-            $caPaths = [
-                '/etc/ssl/certs/ca-certificates.crt',
-                '/etc/pki/tls/certs/ca-bundle.crt',
-                '/etc/ssl/ca-bundle.pem',
-                'C:\\xampp\\apache\\bin\\curl-ca-bundle.crt'
-            ];
-            foreach ($caPaths as $ca) {
-                if (file_exists($ca)) {
-                    $options[PDO::MYSQL_ATTR_SSL_CA] = $ca;
-                    break;
-                }
-            }
-            if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
-                $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
-            }
-        }
+        ] + appDbSslOptions(DB_HOST);
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
     }
     return $pdo;
