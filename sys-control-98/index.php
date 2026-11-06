@@ -43,7 +43,7 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Panel de Administración | E.E.S.T. N.º 5</title>
   <link rel="icon" type="image/png" href="../favicon.png" />
-  <link rel="stylesheet" href="../css/styles.css?v=5" />
+  <link rel="stylesheet" href="../css/styles.css?v=6" />
   <link rel="stylesheet" href="css/admin.css?v=2" />
   <script>
     // MOSTRAR-CSRF: deja el token disponible para que admin.js lo envíe.
@@ -1248,6 +1248,12 @@ try {
                   <input type="url" name="facebook_url" value="<?= htmlspecialchars($contenido['facebook_url'] ?? 'https://www.facebook.com/EESTN5MDP') ?>" />
                 </div>
               </div>
+            </div>
+
+            <div class="field mt-3">
+              <label>Texto Adicional del Pie de Página</label>
+              <input type="text" name="footer_extra" maxlength="200" value="<?= htmlspecialchars($contenido['footer_extra'] ?? '') ?>" />
+              <small class="text-muted">Se muestra en todas las páginas, además del crédito "Desarrollado por", que es fijo.</small>
             </div>
 
             <div class="form-actions mt-4">

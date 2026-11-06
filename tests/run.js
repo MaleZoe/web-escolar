@@ -12,6 +12,7 @@ const mysql=(args,input)=>execFileSync(MYSQL,['-uroot',...args],{encoding:'utf8'
 let server;
 const cleanup=()=>{if(server)server.kill();try{mysql(['-e','DROP DATABASE IF EXISTS '+DB])}catch(e){}try{fs.rmSync(site,{recursive:true,force:true})}catch(e){}};
 (async()=>{
+  execFileSync(process.execPath,[path.join(__dirname,'credito.test.js')],{stdio:'inherit'});
   for(const x of ['index.html','favicon.png','css','js','pages','api','admin','sys-control-98','img'])fs.cpSync(path.join(ROOT,x),path.join(site,x),{recursive:true});
   mysql(['-e',`DROP DATABASE IF EXISTS ${DB}; CREATE DATABASE ${DB} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;`]);
   mysql(['--default-character-set=utf8mb4',DB],fs.readFileSync(path.join(ROOT,'database.sql'),'utf8'));

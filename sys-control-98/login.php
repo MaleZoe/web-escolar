@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
   <meta name="robots" content="noindex, nofollow" />
   <title>Acceso al Sistema | Gestión Central</title>
   <link rel="icon" type="image/png" href="../favicon.png" />
-  <link rel="stylesheet" href="../css/styles.css?v=5" />
+  <link rel="stylesheet" href="../css/styles.css?v=6" />
   <style>
     body {
       min-height: 100vh;

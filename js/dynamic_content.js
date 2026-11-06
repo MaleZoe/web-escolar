@@ -751,6 +751,15 @@
         }
       }
 
+      // Espacio adicional del pie. El crédito "Desarrollado por" es fijo y este código no lo toca.
+      if (c.footer_extra) {
+        var footExtra = document.querySelector(".footer-extra");
+        if (footExtra) {
+          footExtra.textContent = c.footer_extra;
+          footExtra.hidden = false;
+        }
+      }
+
       // Footer institucional en todas las páginas
       var footInfo = document.querySelector(".footer-info");
       if (footInfo && (c.direccion || c.contacto_email)) {

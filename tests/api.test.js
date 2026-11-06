@@ -48,6 +48,11 @@ const fd=(o)=>{const f=new FormData();for(const[k,v]of Object.entries(o))f.appen
  ok('CONT-3','API publica lo refleja',(await new C().f('/api/get_public_data.php')).j.contenido.hero_subtitulo===mark);
  r=await post('save_content',{'content[hero_titulo]':'7 a\u00f1os de t\u00e9cnica'});
  const idx=fs.readFileSync(path.join(SITE,'index.html'),'utf8');ok('CONT-4','guardar no corrompe index.html',/<h1 class="hero-title">/.test(idx));
+ r=await post('save_content',{'content[footer_extra]':'Texto de prueba del pie'});
+ ok('FOOT-1','el texto adicional del pie se guarda',(await new C().f('/api/get_public_data.php')).j.contenido.footer_extra==='Texto de prueba del pie');
+ const creditoAntes=fs.readFileSync(path.join(SITE,'pages','contacto.html'),'utf8');
+ r=await post('save_content',{'content[footer_dev]':'Otro nombre'});
+ ok('FOOT-2','guardar en el panel no altera el crédito',fs.readFileSync(path.join(SITE,'pages','contacto.html'),'utf8')===creditoAntes&&creditoAntes.includes('Malena Salvia'));
  r=await post('save_content',{'content[bad key!]':'x'});ok('CONT-5','rechaza clave invalida',r.j?.success===false);
  sql("DELETE FROM contenido_institucional WHERE clave='bad key!'");
  r=await post('save_especialidad',{nombre:'TestEsp',titulo:'T',descripcion:'D',icono:'laptop',duracion_anios:'7'});ok('ESP-1','crear',r.j?.success===true);
