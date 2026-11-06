@@ -1,3 +1,6 @@
+# ARCHIVO: .htaccess. Solo se usa con Apache (XAMPP). En Vercel manda vercel.json.
+# Bloquea archivos internos y agrega cabeceras de seguridad.
+
 # Protege el sitio cuando corre en Apache (XAMPP / servidor propio). Vercel usa vercel.json.
 Options -Indexes
 

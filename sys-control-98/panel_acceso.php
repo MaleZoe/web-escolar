@@ -1,4 +1,6 @@
 <?php
+// ARCHIVO: sys-control-98/panel_acceso.php
+// QUÉ HACE: cambia la dirección del panel en cada inicio de sesión y envía la nueva por correo.
 // Ruta rotativa del panel: /sys-control-<token>/. Cambia en cada inicio de sesión y el enlace nuevo se envía por correo.
 // El token solo oculta la ruta: el acceso sigue exigiendo usuario, contraseña, sesión y CSRF.
 // Se activa cuando ADMIN_ALERT_EMAIL está definido en un entorno serverless.
@@ -28,6 +30,7 @@ function panelStoredHash(PDO $pdo): ?string {
 }
 
 // Sin token guardado, la ruta válida es la inicial. Con token, solo la vigente.
+// MOSTRAR-ROTACION: decide si la dirección pedida es la vigente. En la base solo se guarda el hash.
 function panelSlugIsValid(PDO $pdo, string $slug): bool {
     $stored = panelStoredHash($pdo);
     return $stored === null ? $slug === '98' : hash_equals($stored, hash('sha256', $slug));
@@ -72,6 +75,7 @@ function panelPostJson(string $url, array $payload, array $headers): array {
 
 // Devuelve true solo si el servicio confirmó el envío.
 // Con RESEND_API_KEY se usa solo Resend; el enlace nunca pasa por FormSubmit.
+// MOSTRAR-ROTACION: envía el enlace por Resend. Devuelve true solo si el servicio confirma el envío.
 function panelSendLink(string $link, string $usuario, string $ip): bool {
     $to = panelAlertEmail();
     if ($to === null || !function_exists('curl_init')) {
@@ -113,6 +117,7 @@ function panelSendLink(string $link, string $usuario, string $ip): bool {
 
 // Tras un login correcto: genera y envía el enlace nuevo, y recién entonces lo activa.
 // Devuelve la ruta nueva, o null si la ruta actual sigue vigente.
+// MOSTRAR-ROTACION: primero envía el correo y después activa la ruta. Así un fallo no deja a nadie afuera.
 function panelRotateAfterLogin(PDO $pdo, string $usuario, string $ip): ?string {
     if (!panelRotationEnabled()) {
         return null;

@@ -1,3 +1,6 @@
+// ARCHIVO: js/script.js
+// QUÉ HACE: interacción de la web pública: tema, menú, línea de tiempo, ventanas e Instagram (Behold).
+// 
 /* E.E.S.T. N.º 5 "Amancio Williams" — interacciones */
 
 /* ---- Modo Claro / Modo Oscuro con persistencia ---- */
@@ -138,6 +141,7 @@
 })();
 
 /* ---- Escapado compartido para todo HTML armado desde JavaScript ---- */
+// MOSTRAR-XSS: convierte símbolos como < en texto común antes de armar HTML.
 function eestEscapeHtml(text) {
   if (text === null || text === undefined) return "";
   return String(text)
@@ -379,6 +383,7 @@ var EESTModal = (function () {
 (function () {
   "use strict";
 
+  // MOSTRAR-BEHOLD: dirección de respaldo del feed. La principal se configura en el panel.
   var FEED_URL = "https://feeds.behold.so/kYahsnwH7WymWcYH98BW";
   var CACHE_KEY = "eest5_behold_cache";
   var track = document.getElementById("igCarouselTrack");
@@ -462,6 +467,7 @@ var EESTModal = (function () {
     EESTModal.open(html);
   }
 
+  // MOSTRAR-BEHOLD: convierte cada publicación en una tarjeta. El texto pasa por escapeHtml.
   function renderPosts(posts) {
     if (!posts || !posts.length) return;
     currentPosts = posts;
@@ -527,6 +533,7 @@ var EESTModal = (function () {
 
   // Carga instantánea desde caché local para evitar pantalla en blanco o skeletons
   try {
+    // MOSTRAR-BEHOLD: primero dibuja la copia guardada en el navegador, sin esperar a internet.
     var cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       var parsedCache = JSON.parse(cached);
@@ -537,6 +544,7 @@ var EESTModal = (function () {
   } catch (e) {}
 
   // Sincronización automática con Behold
+  // MOSTRAR-BEHOLD: pide las publicaciones (JSON), guarda la copia y dibuja el carrusel.
   function loadBeholdFeed(url) {
     var feedUrl = url || FEED_URL;
     fetch(feedUrl, { cache: "no-cache" })

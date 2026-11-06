@@ -1,4 +1,7 @@
 <?php
+// ARCHIVO: sys-control-98/config.php
+// QUÉ HACE: es la base de seguridad del panel. Todos los archivos del panel lo cargan.
+// TIENE: conexión a la base, sesiones, token CSRF y control de inactividad.
 // Configuración y Seguridad Central de Acceso con soporte de variables de entorno (Vercel / Nube)
 require_once __DIR__ . '/../api/common.php';
 require_once __DIR__ . '/panel_acceso.php';
@@ -10,6 +13,7 @@ if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') !== false ? getenv(
 if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'web_escolar_db');
 if (!defined('DB_PORT')) define('DB_PORT', getenv('DB_PORT') ?: '3306');
 
+// MOSTRAR-BD: conexión del panel con PDO.
 function getDB() {
     static $pdo = null;
     if ($pdo === null) {
@@ -34,6 +38,8 @@ function getDB() {
 if (!defined('SESSION_STORE_TTL')) define('SESSION_STORE_TTL', 3600);
 
 // Manejador de sesiones en base de datos para entornos serverless (Vercel / Lambda)
+// MOSTRAR-SESION: guarda las sesiones en la tabla sesiones_php.
+// POR QUÉ: en Vercel cada pedido puede ir a una instancia distinta, sin disco compartido.
 class PdoSessionHandler implements SessionHandlerInterface {
     private $pdo;
     private static $tableChecked = false;
@@ -137,6 +143,7 @@ function getClientIP() {
 }
 
 // Generador de Token CSRF
+// MOSTRAR-CSRF: crea un token aleatorio de 32 bytes (64 caracteres) y lo guarda en la sesión.
 function getCSRFToken() {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -145,6 +152,7 @@ function getCSRFToken() {
 }
 
 // Validación de Token CSRF
+// MOSTRAR-CSRF: compara con hash_equals, que tarda lo mismo aunque el token no coincida.
 function verifyCSRFToken($token) {
     if (empty($_SESSION['csrf_token']) || empty($token)) {
         return false;
@@ -153,6 +161,7 @@ function verifyCSRFToken($token) {
 }
 
 // Verificación de autenticación y timeout de sesión
+// MOSTRAR-SESION: sin sesión manda al login. Con 30 minutos (1800 s) sin actividad, la cierra.
 function checkAdminAuth() {
     if (empty($_SESSION['admin_user'])) {
         header('Location: login.php');

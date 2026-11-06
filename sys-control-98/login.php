@@ -1,4 +1,7 @@
 <?php
+// ARCHIVO: sys-control-98/login.php
+// QUÉ HACE: pantalla y lógica del inicio de sesión del panel.
+// ORDEN: revisa bloqueo, token CSRF, usuario, contraseña; crea la sesión y cambia la ruta.
 require_once __DIR__ . '/config.php';
 
 $error = '';
@@ -22,6 +25,7 @@ $isBlocked = false;
 $intentoRow = null;
 try {
     // Los tiempos se comparan en la base: la zona horaria de PHP puede ser distinta.
+    // MOSTRAR-BLOQUEO: consulta si esta IP sigue bloqueada.
     $stmtCheck = $pdo->prepare("SELECT intentos,
             TIMESTAMPDIFF(SECOND, NOW(), bloqueado_hasta) AS bloqueo_restante,
             TIMESTAMPDIFF(SECOND, ultimo_intento, NOW()) AS desde_ultimo
@@ -61,19 +65,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
 
         if (!empty($usuario) && !empty($password)) {
             try {
+                // MOSTRAR-SQL: consulta preparada: lo que escriba el usuario nunca se ejecuta como SQL.
+                // rol_id = 1: solo entra el rol Administrador.
                 $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE (usuario = :u OR email = :e) AND rol_id = 1 LIMIT 1");
                 $stmt->execute(['u' => $usuario, 'e' => $usuario]);
                 $user = $stmt->fetch();
 
                 // Mitigación de timing attack con hash de relleno si no existe el usuario
+                // Si el usuario no existe, compara igual contra un hash falso: así tarda lo mismo y no delata qué usuarios existen.
                 $dummyHash = '$2y$12$Nz/d8vd4s0NnWKSFbW0uK.8R0d8vd4s0NnWKSFbW0uK.8R0d8vd4s';
                 $hashToVerify = $user ? $user['password'] : $dummyHash;
+                // MOSTRAR-BCRYPT: compara la clave escrita con el hash guardado. La clave original nunca se guarda.
                 $passwordMatch = password_verify($password, $hashToVerify);
 
                 if ($user && $passwordMatch) {
                     // Éxito: limpiar intentos fallidos de esta IP
                     $pdo->prepare("DELETE FROM intentos_login WHERE ip = :ip")->execute(['ip' => $ip]);
                     error_log('login_ok usuario=' . $user['usuario'] . ' ip=' . $ip);
+                    // MOSTRAR-SESION: cambia el ID de sesión al entrar, para evitar el robo por fijación de sesión.
                     session_regenerate_id(true);
 
                     $_SESSION['admin_user'] = [
@@ -88,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
                     // Si el correo no sale, la ruta actual sigue vigente: nadie pierde el acceso.
                     $rutaNueva = null;
                     try {
+                        // MOSTRAR-ROTACION: pide una ruta nueva y envía el correo. Ver panel_acceso.php.
                         $rutaNueva = panelRotateAfterLogin($pdo, $user['usuario'], $ip);
                     } catch (Exception $eRota) {
                         error_log('panel_rotacion: ' . $eRota->getMessage());
@@ -98,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isBlocked) {
                 } else {
                     // Fallo: registrar intento y aplicar bloqueo gradual
                     $intentos = ($intentoRow['intentos'] ?? 0) + 1;
+                    // MOSTRAR-BLOQUEO: al quinto fallo, bloquea esta IP durante 15 minutos.
                     $bloquear = $intentos >= 5;
                     error_log('login_fallido intentos=' . $intentos . ' ip=' . $ip . ($bloquear ? ' bloqueado=15min' : ''));
                     $bloqueoSql = $bloquear ? "DATE_ADD(NOW(), INTERVAL 15 MINUTE)" : "NULL";

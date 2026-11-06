@@ -1,4 +1,6 @@
 <?php
+// Página señuelo: simula un error 404 en /admin. El panel real está en otra dirección.
+// No se publica en Vercel, solo existe en Apache.
 http_response_code(404);
 header("HTTP/1.1 404 Not Found");
 ?>

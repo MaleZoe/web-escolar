@@ -1,4 +1,8 @@
 <?php
+// ARCHIVO: api/get_public_data.php
+// QUÉ HACE: entrega en JSON los datos que muestra la web pública.
+// QUIÉN LO LLAMA: js/dynamic_content.js, cada vez que se abre una página.
+// FLUJO: base de datos, luego este archivo, luego JSON, luego la página.
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
@@ -13,6 +17,7 @@ try {
     $pdo = getPublicDB();
 
     // Contenido general
+    // MOSTRAR-API: 1) trae los textos editables desde contenido_institucional.
     $stmt = $pdo->query("SELECT clave, valor FROM contenido_institucional");
     $contenido = [];
     while ($row = $stmt->fetch()) {
@@ -20,6 +25,7 @@ try {
     }
     unset($contenido['contacto_telefono']);
 
+    // Repara tildes dañadas en textos viejos, por ejemplo Dise?o pasa a Diseño.
     $cleanBadEnc = function($text) {
         if (!is_string($text)) return $text;
         $replacements = [
@@ -105,6 +111,7 @@ try {
     }
 
     // Especialidades
+    // 2) Especialidades.
     $stmtEsp = $pdo->query("SELECT * FROM especialidades ORDER BY id ASC");
     $especialidades = $stmtEsp->fetchAll();
     foreach ($especialidades as &$esp) {
@@ -115,6 +122,7 @@ try {
     unset($esp);
 
     // Hitos Históricos
+    // 3) Hitos de la línea de tiempo.
     $stmtHitos = $pdo->query("SELECT * FROM hitos_historicos ORDER BY anio ASC, orden ASC");
     $hitos = $stmtHitos->fetchAll();
     foreach ($hitos as &$hito) {
@@ -129,6 +137,7 @@ try {
 
     // Proyectos
     // Solo columnas públicas: autor_id no se expone.
+    // 4) Proyectos. JOIN agrega el nombre de la especialidad.
     $stmtProy = $pdo->query("SELECT p.id, p.titulo, p.subtitulo, p.descripcion, p.especialidad_id, p.anio, p.imagen, p.estado, p.destacado, e.nombre AS especialidad_nombre FROM proyectos p LEFT JOIN especialidades e ON p.especialidad_id = e.id ORDER BY p.destacado DESC, p.anio DESC, p.id DESC");
     $proyectos = $stmtProy->fetchAll();
     foreach ($proyectos as &$proy) {
@@ -139,6 +148,7 @@ try {
     }
     unset($proy);
 
+    // MOSTRAR-API: 5) envía todo junto en formato JSON.
     echo json_encode([
         'success' => true,
         'contenido' => $contenido,

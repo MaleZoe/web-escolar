@@ -1,3 +1,5 @@
+-- MIGRACIÓN: crea las tablas que falten, sin borrar datos.
+
 -- Migración segura para bases existentes (producción incluida).
 -- Solo crea lo que falta: no usa DROP, no borra filas y se puede ejecutar más de una vez.
 -- Nunca importes database.sql sobre una base con datos reales: contiene DROP TABLE.

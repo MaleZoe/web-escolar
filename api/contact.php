@@ -1,7 +1,12 @@
 <?php
+// ARCHIVO: api/contact.php
+// QUÉ HACE: recibe el formulario de contacto, lo valida y guarda una copia en la base.
+// QUIÉN LO LLAMA: pages/contacto.html.
+// ORDEN: método, campo trampa, campos, correo, largos, límite de envíos, guardar.
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 
+// Solo acepta POST. Cualquier otro método responde 405.
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'Método no permitido']);
@@ -21,6 +26,7 @@ try {
         $input = $_POST;
     }
 
+    // MOSTRAR-CONTACTO: campo trampa. Si viene lleno es un robot: responde éxito pero no guarda nada.
     // 1. Detección de Bots con Honeypot
     if (!empty($input['_honey']) || !empty($_POST['_honey'])) {
         echo json_encode(['success' => true, 'message' => 'Consulta procesada']);
@@ -32,6 +38,7 @@ try {
     $asunto  = trim($input['asunto'] ?? 'Consulta general');
     $mensaje = trim($input['mensaje'] ?? '');
 
+    // MOSTRAR-CONTACTO: validación en el servidor. La del navegador se puede saltear, esta no. Responde 400.
     if (empty($nombre) || empty($email) || empty($mensaje)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Campos obligatorios incompletos']);
@@ -53,6 +60,7 @@ try {
 
     $pdo = getPublicDB();
 
+    // MOSTRAR-CONTACTO: máximo 5 mensajes cada 15 minutos (900 segundos) por IP. Si se supera, responde 429.
     // 3. Control de tasa de envíos (Rate Limiting por IP: máx 5 mensajes cada 15 min)
     $ip = appClientIP();
 
@@ -98,6 +106,7 @@ try {
         `leido` TINYINT(1) DEFAULT 0
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+    // MOSTRAR-SQL: consulta preparada. Cada ? es un dato: nunca se mezcla con el SQL.
     $stmt = $pdo->prepare("INSERT INTO `mensajes_contacto` (`nombre`, `email`, `asunto`, `mensaje`) VALUES (?, ?, ?, ?)");
     $stmt->execute([$nombre, $email, $asunto, $mensaje]);
 

@@ -1,4 +1,7 @@
 <?php
+// ARCHIVO: api/common.php
+// QUÉ HACE: reúne funciones que usan tanto la API pública como el panel.
+// TIENE: lectura de .env, IP real del visitante, conexión segura (TLS) y cabeceras de seguridad.
 // Utilidades compartidas entre la API publica (db.php) y el panel (config.php).
 
 // Carga .env en entornos locales. getenv() no lo lee por si solo.
@@ -31,6 +34,7 @@ if (!function_exists('appLoadEnv')) {
 
     // IP real del cliente. Las cabeceras de proxy las puede enviar cualquiera, asi que solo
     // se usan cuando la plataforma las controla. Sin esto se puede esquivar el bloqueo por IP.
+    // MOSTRAR-IP: obtiene la IP real. No confía en cabeceras que puede falsificar el visitante.
     function appClientIP(): string {
         $candidates = [];
         if (appIsServerless()) {
@@ -53,6 +57,7 @@ if (!function_exists('appLoadEnv')) {
     // Opciones TLS de PDO para bases remotas (TiDB Cloud, Aiven).
     // DB_SSL_VERIFY=1 exige verificar el certificado del servidor. Hay que activarlo
     // y probarlo en el entorno real: si el certificado no valida, la conexion falla.
+    // MOSTRAR-BD: activa TLS para cifrar la conexión con la base remota.
     function appDbSslOptions(string $host): array {
         if ($host === 'localhost' || $host === '127.0.0.1') {
             return [];
@@ -77,6 +82,7 @@ if (!function_exists('appLoadEnv')) {
         return $options;
     }
 
+    // MOSTRAR-CABECERAS: agrega CSP y anti-clickjacking a las páginas del panel.
     function appSecurityHeaders(): void {
         if (headers_sent()) {
             return;

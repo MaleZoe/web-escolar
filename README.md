@@ -6,6 +6,7 @@ Sitio web institucional y panel administrativo interactivo de la Escuela de Educ
 
 ## 📚 Documentación Oficial
 
+- 🎓 **Para recorrer el código:** en VS Code, buscá `MOSTRAR-` (por ejemplo `MOSTRAR-CSRF`) con Ctrl + Shift + F. Cada resultado explica esa parte del código.
 - 📘 [**Manual de Usuario y Navegación**](file:///docs/MANUAL_DE_USUARIO.md): Guía paso a paso sobre cómo usar el portal público, navegar entre pantallas y operar el panel de gestión administrativa (`sys-control-98`).
 - 🛠️ [**Guía de Instalación y Configuración**](file:///docs/GUIA_INSTALACION_Y_CONFIGURACION.md): Instrucciones detalladas para configurar el entorno de desarrollo local (XAMPP, Laragon, PHP 8+, MySQL) y en la nube (Vercel, TiDB Cloud).
 

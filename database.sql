@@ -1,3 +1,7 @@
+-- ARCHIVO: database.sql. Crea las 13 tablas y carga los datos iniciales.
+-- USO: solo instalación nueva, porque contiene DROP TABLE y borra lo existente.
+-- En una base con datos, usar los archivos de migrations/.
+
 -- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
 --
 -- Host: localhost    Database: web_escolar_db
@@ -16,6 +20,7 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- MOSTRAR-BD: contenido_institucional. Textos editables: pares clave y valor.
 -- Table structure for table `contenido_institucional`
 --
 
@@ -40,6 +45,7 @@ INSERT INTO `contenido_institucional` VALUES ('anuncios_subtitulo','Enterate al 
 UNLOCK TABLES;
 
 --
+-- MOSTRAR-BD: especialidades. Las especialidades técnicas.
 -- Table structure for table `especialidades`
 --
 
@@ -71,6 +77,7 @@ INSERT INTO `especialidades` VALUES (1,'Construcciones','Maestro Mayor de Obras'
 UNLOCK TABLES;
 
 --
+-- MOSTRAR-BD: hitos_historicos. Línea de tiempo de la portada.
 -- Table structure for table `hitos_historicos`
 --
 
@@ -107,6 +114,7 @@ INSERT INTO `hitos_historicos` VALUES (1,'2018','FaciliArt · Impresión 3D soli
 UNLOCK TABLES;
 
 --
+-- MOSTRAR-BD: intentos_login. Control de intentos fallidos por IP.
 -- Table structure for table `intentos_login`
 --
 
@@ -132,6 +140,7 @@ LOCK TABLES `intentos_login` WRITE;
 UNLOCK TABLES;
 
 --
+-- MOSTRAR-BD: proyectos. Proyectos de ExpoTec. Se vincula con especialidades y usuarios.
 -- Table structure for table `proyectos`
 --
 
@@ -169,6 +178,7 @@ INSERT INTO `proyectos` VALUES (1,'Satduino & CubeSat EEST5','Pico-satélite de 
 UNLOCK TABLES;
 
 --
+-- MOSTRAR-BD: mensajes_contacto. Copia de los mensajes del formulario.
 -- Table structure for table `mensajes_contacto`
 --
 
@@ -188,6 +198,7 @@ CREATE TABLE `mensajes_contacto` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- MOSTRAR-BD: refresh_tokens. Quedó de una versión anterior. El código actual no la usa.
 -- Table structure for table `refresh_tokens`
 --
 
@@ -217,6 +228,7 @@ LOCK TABLES `refresh_tokens` WRITE;
 UNLOCK TABLES;
 
 --
+-- MOSTRAR-BD: roles. Administrador, Docente y Estudiante.
 -- Table structure for table `roles`
 --
 
@@ -243,6 +255,7 @@ INSERT INTO `roles` VALUES (1,'Administrador','Control total: gestión de usuari
 UNLOCK TABLES;
 
 --
+-- MOSTRAR-BD: usuarios. Cuentas. La contraseña se guarda como hash bcrypt.
 -- Table structure for table `usuarios`
 --
 
@@ -278,6 +291,7 @@ INSERT INTO `usuarios` VALUES (1,'gestor_sys98','acceso.seguro@gestion-interna.n
 UNLOCK TABLES;
 
 --
+-- MOSTRAR-BD: sesiones_php. Sesiones del panel.
 -- Table structure for table `sesiones_php`
 --
 
@@ -291,6 +305,7 @@ CREATE TABLE `sesiones_php` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- MOSTRAR-BD: archivos_subidos. Archivos subidos, guardados dentro de la base.
 -- Table structure for table `archivos_subidos`
 --
 
@@ -304,6 +319,7 @@ CREATE TABLE `archivos_subidos` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- MOSTRAR-BD: rate_limit_contacto. Límite de envíos del formulario por IP.
 -- Table structure for table `rate_limit_contacto`
 --
 
@@ -316,6 +332,7 @@ CREATE TABLE `rate_limit_contacto` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- MOSTRAR-BD: panel_acceso. Hash de la ruta vigente del panel.
 -- Table structure for table `panel_acceso`
 --
 

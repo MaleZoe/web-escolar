@@ -1,4 +1,5 @@
 <?php
+// Imita las rutas de vercel.json para poder probar el sitio en la computadora.
 // Emula vercel.json sobre php -S (emulacion, no Vercel real)
 $p = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $root = $_SERVER['DOCUMENT_ROOT'];

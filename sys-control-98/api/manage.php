@@ -1,4 +1,8 @@
 <?php
+// ARCHIVO: sys-control-98/api/manage.php
+// QUÉ HACE: recibe TODAS las operaciones del panel: guardar, editar, borrar y subir archivos.
+// QUIÉN LO LLAMA: sys-control-98/js/admin.js.
+// ORDEN: sesión (401), inactividad, token CSRF (403), acción pedida, validación y consulta preparada.
 error_reporting(0);
 ini_set('display_errors', '0');
 header('Content-Type: application/json; charset=utf-8');
@@ -7,6 +11,7 @@ require_once __DIR__ . '/../config.php';
 // Error con un mensaje pensado para mostrarle al administrador.
 class UserFacingError extends RuntimeException {}
 
+// MOSTRAR-SESION: primera barrera. Sin sesión iniciada responde 401.
 if (empty($_SESSION['admin_user'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Acceso denegado: sesión no iniciada']);
@@ -39,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // MOSTRAR-CSRF: segunda barrera. Sin token válido responde 403.
     $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     if (!verifyCSRFToken($token)) {
         http_response_code(403);
@@ -51,6 +57,7 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $pdo = getDB();
 
 // Lee un texto de $_POST validando obligatoriedad y largo máximo.
+// Lee un texto del formulario y controla que no falte ni sea demasiado largo.
 function postText(string $name, string $label, int $max, bool $required = false, string $default = ''): string {
     $value = $_POST[$name] ?? $default;
     if (!is_string($value)) {
@@ -74,6 +81,7 @@ function validImageRef(string $value): string {
     throw new UserFacingError('El nombre de archivo de la imagen no es válido.');
 }
 
+// Solo acepta enlaces http o https. Rechaza, por ejemplo, javascript:
 function validExternalUrl(string $value): string {
     if ($value === '') {
         return '';
@@ -99,11 +107,13 @@ function insertUploadedFile(PDO $db, string $name, string $mime, string $data): 
 
 // Valida y guarda un archivo. Devuelve null si no se eligió ninguno.
 // Un archivo rechazado detiene la operación: el administrador tiene que enterarse.
+// MOSTRAR-ARCHIVOS: controla y guarda un archivo subido.
 function saveUploadedFile($file, $prefix = 'img') {
     if (!is_array($file) || !is_string($file['name'] ?? null) || $file['name'] === '' || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
         return null;
     }
 
+    // MOSTRAR-ARCHIVOS: control 1, tamaño. 12 MB, o 4 MB en Vercel.
     $maxBytes = appMaxUploadBytes();
     $maxMb = (int)round($maxBytes / 1048576);
     $displayName = basename($file['name']);
@@ -115,6 +125,7 @@ function saveUploadedFile($file, $prefix = 'img') {
         throw new UserFacingError("No se pudo recibir \"$displayName\". Volvé a intentarlo.");
     }
 
+    // MOSTRAR-ARCHIVOS: control 2, lista de extensiones permitidas.
     $allowed = [
         'jpg'  => ['image/jpeg'],
         'jpeg' => ['image/jpeg'],
@@ -132,6 +143,7 @@ function saveUploadedFile($file, $prefix = 'img') {
     }
 
     // Tipo real según los bytes del archivo. Si no se puede comprobar, no se acepta.
+    // MOSTRAR-ARCHIVOS: control 3, finfo lee el tipo real en los bytes del archivo.
     $realMime = '';
     if (function_exists('finfo_open')) {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -147,6 +159,7 @@ function saveUploadedFile($file, $prefix = 'img') {
         throw new UserFacingError("\"$displayName\" no es realmente un archivo .$ext.");
     }
 
+    // MOSTRAR-ARCHIVOS: control 4, el nombre lo genera el servidor.
     $newFileName = $prefix . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
     $fileData = file_get_contents($file['tmp_name']);
     if ($fileData === false) {
@@ -159,6 +172,7 @@ function saveUploadedFile($file, $prefix = 'img') {
     try {
         insertUploadedFile($db, $newFileName, $realMime, $fileData);
         $savedInDb = true;
+    // Si algo falla, el detalle queda en el log y el navegador recibe un mensaje general.
     } catch (Exception $e) {
         try {
             $db->exec("CREATE TABLE IF NOT EXISTS `archivos_subidos` (
@@ -190,9 +204,11 @@ function saveUploadedFile($file, $prefix = 'img') {
 }
 
 try {
+    // MOSTRAR-PANEL: según la acción pedida se ejecuta un solo bloque (case).
     switch ($action) {
         // --- TEXTOS E IMÁGENES INSTITUCIONALES ---
         // La base de datos es la única fuente de verdad: las páginas públicas la leen por la API.
+        // Guarda los textos e imágenes de las pestañas en contenido_institucional.
         case 'save_content':
             $data = $_POST['content'] ?? [];
             if (!is_array($data)) {
@@ -225,6 +241,7 @@ try {
             break;
 
         // --- ESPECIALIDADES ---
+        // Crea o edita una especialidad. Si llega un id edita; si no, crea.
         case 'save_especialidad':
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
             $nombre = postText('nombre', 'Nombre', 100, true);
@@ -291,6 +308,7 @@ try {
             break;
 
         // --- HITOS HISTÓRICOS ---
+        // Crea o edita un hito de la línea de tiempo.
         case 'save_hito':
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
             $anio = postText('anio', 'Año', 50, true);
@@ -333,6 +351,7 @@ try {
             break;
 
         // --- PROYECTOS ---
+        // Crea o edita un proyecto de ExpoTec.
         case 'save_proyecto':
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
             $titulo = postText('titulo', 'Título', 150, true);
@@ -411,6 +430,7 @@ try {
             if ($current === '' || !password_verify($current, $storedHash)) {
                 throw new UserFacingError('La contraseña actual no es correcta.');
             }
+            // MOSTRAR-BCRYPT: guarda la clave nueva como hash bcrypt de costo 12.
             $hash = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 12]);
             $stmt = $pdo->prepare("UPDATE usuarios SET password = :hash WHERE id = :id");
             $stmt->execute(['hash' => $hash, 'id' => $adminId]);
@@ -424,6 +444,7 @@ try {
             echo json_encode(['success' => true, 'mensajes' => $stmt->fetchAll()]);
             break;
 
+        // Marca un mensaje de contacto como leído o no leído.
         case 'toggle_mensaje_leido':
             $id = requireId();
             $stmt = $pdo->prepare("UPDATE mensajes_contacto SET leido = 1 - COALESCE(leido, 0) WHERE id = :id");

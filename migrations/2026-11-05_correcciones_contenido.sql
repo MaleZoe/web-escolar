@@ -1,3 +1,5 @@
+-- MIGRACIÓN: corrige un texto de SatDuino, sin borrar filas.
+
 -- Corrige un dato técnico: un globo estratosférico no pone un dispositivo en órbita.
 -- No borra filas y se puede ejecutar más de una vez.
 UPDATE `hitos_historicos`

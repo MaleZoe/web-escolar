@@ -1,3 +1,4 @@
+// Comando: npm test. Orquesta todas las pruebas.
 // Crea una base de prueba separada, copia el sitio a una carpeta temporal, corre las pruebas y limpia todo.
 // Nunca toca la base web_escolar_db ni los archivos del proyecto.
 // Variables opcionales: PHP_BIN, MYSQL_BIN, TEST_PORT.

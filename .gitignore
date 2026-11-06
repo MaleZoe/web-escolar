@@ -1,3 +1,5 @@
+# ARCHIVO: .gitignore. Lista lo que Git no sube al repositorio.
+
 # Archivos comprimidos y respaldos pesados
 *.zip
 *.tar.gz

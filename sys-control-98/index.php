@@ -1,11 +1,16 @@
 <?php
+// ARCHIVO: sys-control-98/index.php
+// QUÉ HACE: es la pantalla del panel, con sus 9 pestañas y 3 ventanas para editar.
+// CÓMO FUNCIONA: PHP trae los datos y arma la página; admin.js envía los cambios a api/manage.php.
 require_once __DIR__ . '/config.php';
+// MOSTRAR-SESION: si no hay sesión, esta línea manda al login.
 checkAdminAuth();
 
 $user = $_SESSION['admin_user'];
 $pdo = getDB();
 
 // Cargar datos actuales de contenido_institucional
+// MOSTRAR-PANEL: carga los datos actuales para mostrarlos en cada pestaña.
 $stmt = $pdo->query("SELECT clave, valor FROM contenido_institucional");
 $contenido = [];
 while ($row = $stmt->fetch()) {
@@ -41,6 +46,7 @@ try {
   <link rel="stylesheet" href="../css/styles.css?v=5" />
   <link rel="stylesheet" href="css/admin.css?v=2" />
   <script>
+    // MOSTRAR-CSRF: deja el token disponible para que admin.js lo envíe.
     window.CSRF_TOKEN = <?= json_encode(getCSRFToken()) ?>;
     window.MAX_UPLOAD_BYTES = <?= (int)appMaxUploadBytes() ?>;
   </script>
@@ -173,6 +179,7 @@ try {
         <div id="toast" class="toast">Guardado exitosamente</div>
 
         <!-- ================= 1. PESTAÑA: LANDING (PORTADA & HERO) ================= -->
+        <?php /* PESTAÑA 1, Landing: portada de la web. Guarda en contenido_institucional. */ ?>
         <section id="tab-landing" class="admin-tab active">
           <form class="content-form" onsubmit="saveGeneralContent(event)">
             <div class="card">
@@ -246,6 +253,7 @@ try {
         </section>
 
         <!-- ================= 2. PESTAÑA: LA ESCUELA ================= -->
+        <?php /* PESTAÑA 2, Escuela: autoridades y talleres. */ ?>
         <section id="tab-escuela" class="admin-tab">
           <form class="content-form" onsubmit="saveGeneralContent(event)">
             <!-- 1. Encabezado de Página (Hero) -->
@@ -501,6 +509,7 @@ try {
         </section>
 
         <!-- ================= 3. PESTAÑA: ANUNCIOS (BEHOLD / INSTAGRAM) ================= -->
+        <?php /* PESTAÑA 3, Anuncios: Instagram y URL del feed de Behold. */ ?>
         <section id="tab-anuncios" class="admin-tab">
           <div class="card">
             <h3 class="card-title">Feed de Noticias y Comunicados (Instagram / Behold)</h3>
@@ -564,6 +573,7 @@ try {
         </section>
 
         <!-- ================= 4. PESTAÑA: ESPECIALIDADES ================= -->
+        <?php /* PESTAÑA 4, Especialidades: tabla especialidades. */ ?>
         <section id="tab-especialidades" class="admin-tab">
           <!-- Configuración de Encabezado de la Sección -->
           <div class="card" style="margin-bottom: 24px;">
@@ -639,6 +649,7 @@ try {
         </section>
 
         <!-- ================= 5. PESTAÑA: HITOS HISTÓRICOS (PROYECTOS EMBLEMÁTICOS) ================= -->
+        <?php /* PESTAÑA 5, Hitos: tabla hitos_historicos. */ ?>
         <section id="tab-hitos" class="admin-tab">
           <!-- Configuración de Textos de la Sección Hitos -->
           <div class="card mb-4">
@@ -719,6 +730,7 @@ try {
         </section>
 
         <!-- ================= 6. PESTAÑA: EXPOTEC ================= -->
+        <?php /* PESTAÑA 6, ExpoTec: textos, catálogo y tabla proyectos. */ ?>
         <section id="tab-expotec" class="admin-tab">
           <form class="content-form" onsubmit="saveGeneralContent(event)">
             <!-- Bloque 1: Introducción y Descripción General -->
@@ -948,6 +960,7 @@ try {
         </section>
 
         <!-- ================= 7. PESTAÑA: INSTITUCIONALES ================= -->
+        <?php /* PESTAÑA 7, Institucionales: convivencia y Régimen Académico. */ ?>
         <section id="tab-institucionales" class="admin-tab">
           <form class="content-form" onsubmit="saveGeneralContent(event)">
             <!-- 1. Encabezado / Hero Institucional -->
@@ -1148,6 +1161,7 @@ try {
         </section>
 
         <!-- ================= 8. PESTAÑA: CONTACTO ================= -->
+        <?php /* PESTAÑA 8, Contacto: datos de contacto y bandeja de mensajes. */ ?>
         <section id="tab-contacto" class="admin-tab">
           <form class="content-form" onsubmit="saveGeneralContent(event)">
             <!-- 1. Encabezado de Página -->
@@ -1266,6 +1280,7 @@ try {
                   <div style="background: var(--crema-suave); border: 1px solid var(--linea); border-radius: 10px; padding: 16px 18px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
                       <div>
+                        <?php /* MOSTRAR-XSS: htmlspecialchars muestra lo escrito como texto. Un script en un mensaje no se ejecuta. */ ?>
                         <strong style="font-size: 1.05rem; color: var(--carbon);"><?= htmlspecialchars($msg['nombre']) ?></strong>
                         <span style="color: var(--texto-suave); font-size: 0.9rem; margin-left: 8px;">&lt;<a href="mailto:<?= htmlspecialchars($msg['email']) ?>" style="color: var(--verde); font-weight: 600;"><?= htmlspecialchars($msg['email']) ?></a>&gt;</span>
                         <div style="font-size: 0.85rem; color: var(--azul); font-weight: 600; margin-top: 2px;">
@@ -1291,6 +1306,7 @@ try {
         </section>
 
         <!-- ================= 9. PESTAÑA: SEGURIDAD & ACCESO ================= -->
+        <?php /* PESTAÑA 9, Seguridad: cambio de contraseña. */ ?>
         <section id="tab-seguridad" class="admin-tab">
           <div class="card" style="max-width: 560px;">
             <h3 class="card-title">Seguridad y Acceso al Panel</h3>
@@ -1320,6 +1336,7 @@ try {
   </div>
 
   <!-- MODAL ESPECIALIDAD -->
+  <?php /* VENTANA: crear o editar especialidad. */ ?>
   <div id="modal-especialidad" class="modal">
     <div class="modal-content" style="max-width: 650px;">
       <div class="modal-header">
@@ -1379,6 +1396,7 @@ try {
   </div>
 
   <!-- MODAL HITO / PROYECTO EMBLEMÁTICO -->
+  <?php /* VENTANA: crear o editar hito. */ ?>
   <div id="modal-hito" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -1448,6 +1466,7 @@ try {
   </div>
 
   <!-- MODAL PROYECTO EXPOTEC -->
+  <?php /* VENTANA: crear o editar proyecto. */ ?>
   <div id="modal-proyecto" class="modal">
     <div class="modal-content" style="max-width: 650px;">
       <div class="modal-header">

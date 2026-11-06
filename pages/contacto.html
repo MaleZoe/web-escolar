@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- PÁGINA: contacto. El envío del formulario está en el script al final de este archivo. -->
 <html lang="es">
   <head>
     <meta charset="utf-8" />
@@ -122,11 +123,13 @@ Mar del Plata, Buenos Aires</p>
             <h2 class="h2">Escribinos un mensaje</h2>
             <p class="contacto-form-desc">Completá el formulario para enviarnos tu consulta directa a <strong>infot5@eest5mdp.edu.ar</strong>. Te responderemos a la brevedad.</p>
             
+            <!-- MOSTRAR-CONTACTO: formulario. JavaScript frena el envío normal y usa los pasos del script final. -->
             <form id="contactoForm" class="contacto-form" method="POST" action="https://formsubmit.co/infot5@eest5mdp.edu.ar">
               <!-- Parámetros FormSubmit -->
               <input type="hidden" name="_captcha" value="false" />
               <input type="hidden" name="_template" value="table" />
               <input type="hidden" name="_subject" value="Nuevo mensaje desde la Web E.E.S.T. N.º 5" />
+              <!-- MOSTRAR-CONTACTO: campo trampa invisible. Una persona no lo ve; un robot lo completa. -->
               <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" />
 
               <div class="contacto-form-row-3">
@@ -252,6 +255,7 @@ Mar del Plata, Buenos Aires</p>
           statusBox.style.display = "none";
 
           var honey = form.elements["_honey"] ? form.elements["_honey"].value : "";
+          // MOSTRAR-CONTACTO: prepara los datos para enviar.
           var payload = {
             nombre: nombre,
             email: email,
@@ -264,6 +268,7 @@ Mar del Plata, Buenos Aires</p>
             // 1. El backend decide primero: valida, aplica el límite y guarda la consulta.
             var saved = false;
             try {
+              // MOSTRAR-CONTACTO: camino 1, envía a nuestro servidor y guarda en la base. Espera la respuesta.
               var dbRes = await fetch("../api/contact.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -289,6 +294,7 @@ Mar del Plata, Buenos Aires</p>
             // 2. Aviso por correo a la casilla oficial mediante FormSubmit.
             var mailed = false;
             try {
+              // MOSTRAR-CONTACTO: camino 2, FormSubmit envía el correo a la escuela.
               var res = await fetch("https://formsubmit.co/ajax/infot5@eest5mdp.edu.ar", {
                 method: "POST",
                 headers: {
@@ -312,6 +318,7 @@ Mar del Plata, Buenos Aires</p>
             }
 
             // 3. El aviso refleja lo que realmente ocurrió.
+            // MOSTRAR-CONTACTO: el aviso muestra lo que realmente ocurrió.
             if (saved || mailed) {
               showStatus("¡Muchas gracias! Recibimos tu mensaje. Te responderemos a la brevedad.", false);
               form.reset();

@@ -1,3 +1,7 @@
+// ARCHIVO: js/dynamic_content.js
+// QUÉ HACE: al abrir una página, trae los datos de la base y actualiza lo que se ve.
+// SI LA API FALLA: queda visible el texto escrito en el HTML.
+// 
 /* Integración dinámica con MySQL / TiDB Cloud via API */
 (function () {
   "use strict";
@@ -14,12 +18,14 @@
 
   // El feed de Instagram se pide una sola vez: con la URL del panel o con la predeterminada.
   var beholdRequested = false;
+  // MOSTRAR-BEHOLD: garantiza una sola consulta al feed, con la URL guardada en el panel.
   function requestBehold(url) {
     if (beholdRequested || typeof window.loadBeholdFeed !== "function") return;
     beholdRequested = true;
     window.loadBeholdFeed(url);
   }
 
+  // MOSTRAR-API: pide los datos a api/get_public_data.php.
   fetch(apiEndpoint, { cache: "no-store" })
     .then(function (res) {
       if (!res.ok) throw new Error("HTTP error " + res.status);
@@ -63,6 +69,7 @@
 
       // Texto de la base con el formato mínimo que usa el sitio: negrita, cursiva y saltos de línea.
       // Todo lo demás queda como texto, así que nunca se ejecuta como código.
+      // MOSTRAR-XSS: escapa el texto de la base y solo permite negrita, cursiva y saltos de línea.
       function setRichText(el, value) {
         el.innerHTML = String(value)
           .replace(/&/g, "&amp;")
@@ -356,6 +363,7 @@
         }
 
         // La tarjeta visible es la de la base: se agregan o quitan para coincidir con ella.
+        // Crea o quita tarjetas para que coincidan con las especialidades de la base.
         var espList = espSec.querySelector(".esp-list");
         if (espList && Array.isArray(data.especialidades) && data.especialidades.length > 0) {
           var espCards = Array.prototype.slice.call(espList.querySelectorAll(".esp"));
@@ -542,6 +550,7 @@
         if (htSub) htSub.textContent = c.hitos_descripcion;
       }
 
+      // Crea o quita hitos para que coincidan con los de la base.
       var hitoNodes = Array.prototype.slice.call(document.querySelectorAll(".hito-v2"));
       if (hitoNodes.length > 0 && Array.isArray(data.hitos)) {
         var hitoTemplate = hitoNodes[hitoNodes.length - 1];
@@ -632,6 +641,7 @@
       }
 
       // ================= CATÁLOGO DE PROYECTOS (EXPOTEC) =================
+      // MOSTRAR-API: arma el catálogo de proyectos. Se ve solo si está activado en el panel.
       var proyGrid = document.getElementById("proyectosGrid");
       var proySection = document.getElementById("proyectosExpotec");
       if (proyGrid && proySection && Array.isArray(data.proyectos)) {

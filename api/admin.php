@@ -1,4 +1,5 @@
 <?php
+// QUÉ HACE: en Vercel, todas las direcciones del panel pasan por este archivo.
 // Enrutador serverless del panel en Vercel: /sys-control-<ruta>/...
 // Solo se incluyen los archivos de esta lista: nunca una ruta armada con la URL.
 $path = (string)parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
@@ -16,6 +17,7 @@ if (!preg_match('#^/sys-control-([a-z0-9]+)(/.*)?$#', $path, $m)) {
 $slug = $m[1];
 $rest = $m[2] ?? '';
 
+// MOSTRAR-RUTAS: lista cerrada de páginas. Una dirección fuera de la lista responde 404.
 $routes = [
     ''                        => 'index.php',
     'index.php'               => 'index.php',
@@ -31,6 +33,7 @@ $routes = [
 require_once __DIR__ . '/../sys-control-98/config.php';
 
 // Una ruta vencida responde igual que una que nunca existió.
+// MOSTRAR-ROTACION: compara la dirección pedida con la ruta vigente del panel.
 if (!panelSlugIsValid(getDB(), $slug)) {
     adminNotFound();
 }

@@ -1,14 +1,19 @@
 <?php
+// ARCHIVO: api/image.php
+// QUÉ HACE: entrega imágenes y archivos, desde el disco o desde la base de datos.
+// POR QUÉ: en Vercel lo subido no queda en disco, así que los archivos también viven en la base.
 // Servidor de imágenes dinámicas y archivos subidos desde TiDB Cloud o disco local
 header('X-Content-Type-Options: nosniff');
 require_once __DIR__ . '/db.php';
 
+// MOSTRAR-RUTAS: basename quita las carpetas. Con ../ no se puede salir de la carpeta.
 $filename = isset($_GET['file']) ? basename($_GET['file']) : '';
 if (empty($filename)) {
     http_response_code(400);
     exit('Nombre de archivo no especificado');
 }
 
+// MOSTRAR-RUTAS: lista de extensiones permitidas. Pedir config.php responde 403.
 $safeMimes = [
     'jpg'  => 'image/jpeg',
     'jpeg' => 'image/jpeg',
@@ -38,6 +43,7 @@ if (file_exists($localPath) && is_file($localPath)) {
 // 2. Buscar en la base de datos (archivos_subidos)
 try {
     $pdo = getPublicDB();
+    // MOSTRAR-ARCHIVOS: si no está en el disco, lo busca en la tabla archivos_subidos.
     $stmt = $pdo->prepare("SELECT mime, datos FROM archivos_subidos WHERE nombre = :nom LIMIT 1");
     $stmt->execute(['nom' => $filename]);
     $row = $stmt->fetch();

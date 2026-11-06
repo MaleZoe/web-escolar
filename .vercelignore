@@ -1,3 +1,5 @@
+# ARCHIVO: .vercelignore. Lista lo que NO se publica en Vercel.
+
 # Archivos pesados y multimedia fuera de funciones serverless
 *.mp4
 *.zip

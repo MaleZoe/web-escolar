@@ -1,3 +1,7 @@
+// ARCHIVO: sys-control-98/js/admin.js
+// QUÉ HACE: controla el panel en el navegador: pestañas, ventanas y envío de datos sin recargar.
+// ENVÍA TODO A: api/manage.php.
+// 
 // CONTROL DEL MENÚ LATERAL RESPONSIVE (MÓVIL / TABLET)
 function toggleSidebar(open) {
   const sidebar = document.getElementById('adminSidebar');
@@ -124,12 +128,14 @@ function clearFileInputs(modalId) {
 }
 
 // HELPER DE COMUNICACIÓN CON LA API
+// Arma la dirección de manage.php relativa a la página, porque la carpeta del panel cambia.
 function getApiEndpoint(action) {
   // Relativa a la pagina: la carpeta del panel puede cambiar en cada inicio de sesion.
   var base = new URL('api/manage.php', window.location.href).pathname;
   return action ? base + (base.includes('?') ? '&' : '?') + 'action=' + encodeURIComponent(action) : base;
 }
 
+// MOSTRAR-PANEL: función única de envío. Todos los botones de guardar pasan por acá.
 async function fetchApi(url, options = {}) {
   try {
     options.headers = options.headers || {};
@@ -140,6 +146,7 @@ async function fetchApi(url, options = {}) {
         options.headers['X-CSRF-Token'] = window.CSRF_TOKEN;
       }
     }
+    // MOSTRAR-CSRF: agrega el token a cada envío.
     if (options.body instanceof FormData && window.CSRF_TOKEN && !options.body.has('csrf_token')) {
       options.body.append('csrf_token', window.CSRF_TOKEN);
     }
@@ -165,6 +172,7 @@ async function fetchApi(url, options = {}) {
 }
 
 // GUARDAR CONTENIDO GENERAL (TEXTOS E IMÁGENES)
+// Guarda los formularios de texto e imágenes de las pestañas (acción save_content).
 async function saveGeneralContent(e) {
   e.preventDefault();
   const form = e.target;
@@ -410,6 +418,7 @@ async function deleteHito(id) {
 }
 
 // ================= SEGURIDAD =================
+// Envía la clave actual y la nueva. El control real lo hace el servidor.
 async function changePassword(e) {
   e.preventDefault();
   const current = document.getElementById('current_admin_password').value;
@@ -438,6 +447,7 @@ async function changePassword(e) {
 }
 
 // ================= MENSAJES DE CONTACTO =================
+// Marca un mensaje como leído en la bandeja.
 async function toggleMensajeLeido(id) {
   const formData = new FormData();
   formData.append('id', id);
